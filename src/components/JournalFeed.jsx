@@ -108,6 +108,7 @@ function JournalEntryCard({ entry, onCreateGoal, onUpdateEntry, dismissedSuggest
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedContent, setEditedContent] = useState(entry.content);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const handleSave = () => {
         if (onUpdateEntry) {
@@ -158,12 +159,22 @@ function JournalEntryCard({ entry, onCreateGoal, onUpdateEntry, dismissedSuggest
                     </div>
                 </div>
             ) : (
-                <div className="group/content relative">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium text-gray-800 dark:text-gray-300">
-                        {entry.content}
-                    </p>
+                <div className="group/content relative cursor-pointer">
+                    <div
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className={`transition-all duration-300 relative ${!isExpanded ? 'max-h-[80px] overflow-hidden' : ''}`}
+                    >
+                        <p className={`text-sm leading-relaxed whitespace-pre-wrap font-medium text-gray-800 dark:text-gray-300`}>
+                            {entry.content}
+                        </p>
+
+                        {/* Gradient Fade Overlay when collapsed */}
+                        {!isExpanded && (
+                            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--color-surface)] to-transparent" />
+                        )}
+                    </div>
                     <button
-                        onClick={() => setIsEditing(true)}
+                        onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
                         className="absolute -right-2 -top-2 p-1.5 bg-white dark:bg-neutral-800 rounded-full shadow-sm opacity-0 group-hover/content:opacity-100 transition-opacity text-gray-400 hover:text-blue-500"
                     >
                         <Pencil size={12} />

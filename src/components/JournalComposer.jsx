@@ -27,7 +27,8 @@ export default function JournalComposer({ onAddEntry, playSound }) {
             try {
                 const recognition = new SpeechRecognition();
                 recognition.continuous = true;
-                recognition.interimResults = true;
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
                 recognition.lang = 'en-US';
 
                 recognition.onstart = () => {

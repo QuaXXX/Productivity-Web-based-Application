@@ -52,16 +52,27 @@ const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, total
                 className="overflow-hidden rounded-2xl"
             >
                 <motion.div
-                    className="flex"
+                    className="flex touch-pan-y" // Allow vertical scroll while touching
                     animate={{ x: `-${currentIndex * 100}%` }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={(e, { offset, velocity }) => {
+                        const swipe = offset.x;
+                        if (swipe < -50) {
+                            nextSlide();
+                        } else if (swipe > 50) {
+                            prevSlide();
+                        }
+                    }}
                 >
                     {widgets.map((widget, i) => {
                         const Icon = widget.icon;
                         return (
                             <div
                                 key={i}
-                                className="min-w-full p-6 rounded-2xl border border-[var(--color-border-light)]"
+                                className="min-w-full p-6 rounded-2xl border border-[var(--color-border-light)] select-none" // select-none for drag
                                 style={{ backgroundColor: widget.bg }}
                             >
                                 <div className="flex items-center justify-between">
@@ -105,16 +116,16 @@ const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, total
                 ))}
             </div>
 
-            {/* Arrow Controls - positioned outside */}
+            {/* Arrow Controls - positioned outside (Hidden on Mobile) */}
             <button
                 onClick={prevSlide}
-                className="absolute -left-3 top-[40%] -translate-y-1/2 w-7 h-7 rounded-full bg-[var(--color-surface)] shadow-md flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-light)] z-10"
+                className="hidden md:flex absolute -left-3 top-[40%] -translate-y-1/2 w-7 h-7 rounded-full bg-[var(--color-surface)] shadow-md items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-light)] z-10"
             >
                 <ChevronLeft size={16} />
             </button>
             <button
                 onClick={nextSlide}
-                className="absolute -right-3 top-[40%] -translate-y-1/2 w-7 h-7 rounded-full bg-[var(--color-surface)] shadow-md flex items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-light)] z-10"
+                className="hidden md:flex absolute -right-3 top-[40%] -translate-y-1/2 w-7 h-7 rounded-full bg-[var(--color-surface)] shadow-md items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-light)] z-10"
             >
                 <ChevronRight size={16} />
             </button>

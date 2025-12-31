@@ -62,6 +62,18 @@ function App() {
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
     const [isStatsSettingsOpen, setIsStatsSettingsOpen] = useState(false);
 
+    // Slide Transition State
+    const [slideDirection, setSlideDirection] = useState(0);
+
+    const handleTabChange = (newTab) => {
+        if (newTab === activeTab) return;
+        const TAB_ORDER = ['focus', 'weekly', 'journal', 'profile'];
+        const oldIndex = TAB_ORDER.indexOf(activeTab);
+        const newIndex = TAB_ORDER.indexOf(newTab);
+        setSlideDirection(newIndex > oldIndex ? 1 : -1);
+        setActiveTab(newTab);
+    };
+
     // 2. Smart Defaults (Auto-Hide) - Default to TRUE
     const [autoHideCompleted, setAutoHideCompletedState] = useState(() => {
         const saved = localStorage.getItem('productivity_auto_hide');
@@ -122,10 +134,10 @@ function App() {
 
         const currentIndex = TAB_ORDER.indexOf(activeTab);
         if (isLeftSwipe && currentIndex < TAB_ORDER.length - 1) {
-            setActiveTab(TAB_ORDER[currentIndex + 1]);
+            handleTabChange(TAB_ORDER[currentIndex + 1]);
         }
         if (isRightSwipe && currentIndex > 0) {
-            setActiveTab(TAB_ORDER[currentIndex - 1]);
+            handleTabChange(TAB_ORDER[currentIndex - 1]);
         }
 
         setTouchStart(null);
@@ -1106,57 +1118,73 @@ function App() {
                     onTouchEnd={onTouchEnd}
                     onScroll={handleContentScroll}
                 >
-                    {activeTab === 'profile' ? (
-                        <StatsSection
-                            history={history}
-                            streak={streak}
-                            currentCompletionRate={todayStats.progress}
-                            chartStyle={chartStyle}
-                            bigGoals={bigGoals}
-                            habits={habits}
-                            hiddenGoalIds={hiddenGoalIds}
-                            onToggleVisibility={toggleGoalVisibility}
-                            autoHideCompleted={autoHideCompleted}
-                        />
-                    ) : activeTab === 'weekly' ? (
-                        <WeekView
-                            history={weekViewData}
-                            viewingDate={viewingDate}
-                            onNavigateToToday={() => { setActiveTab('focus'); setViewingDate('Today'); }}
-                            onAddFutureTask={() => { }}
-                            selectedDayIndex={weekSelectedDayIndex}
-                            setSelectedDayIndex={setWeekSelectedDayIndex}
-                        />
-                    ) : activeTab === 'journal' ? (
-                        <JournalView
-                            entries={journalEntries}
-                            onAddEntry={handleAddJournalEntry}
-                            onUpdateEntry={handleUpdateJournalEntry}
-                            onCreateGoal={handleCreateFromAnalysis}
-                            playSound={playSound}
-                            dismissedSuggestions={dismissedSuggestions}
-                            onDismissSuggestion={handleDismissSuggestion}
-                        />
-                    ) : (
-                        // FOCUS VIEW (Dashboard)
-                        // FOCUS VIEW (Dashboard)
-                        <FocusView
-                            viewMode={viewMode}
-                            visibleHabits={visibleHabits}
-                            sortedBigGoals={sortedBigGoals}
-                            bigGoals={bigGoals}
-                            isReadOnly={isReadOnly}
-                            onToggleHabit={handleToggleHabit}
-                            onOpenHabitModal={() => setIsHabitModalOpen(true)}
-                            onOpenGoalModal={() => setIsGoalModalOpen(true)}
-                            onEditHabit={handleEditHabit}
-                            onDeleteHabit={handleDeleteHabit}
-                            onAddBigGoalStep={addBigGoalStep}
-                            onToggleBigGoalStep={toggleBigGoalStep}
-                            onDeleteBigGoalStep={deleteBigGoalStep}
-                            onDeleteBigGoal={deleteBigGoal}
-                        />
-                    )}
+                    <AnimatePresence mode="popLayout" custom={slideDirection}>
+                        <motion.div
+                            key={activeTab}
+                            custom={slideDirection}
+                            variants={{
+                                enter: (direction) => ({ x: direction > 0 ? 300 : -300, opacity: 0 }),
+                                center: { x: 0, opacity: 1 },
+                                exit: (direction) => ({ x: direction < 0 ? 300 : -300, opacity: 0 })
+                            }}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="h-full w-full"
+                        >
+                            {activeTab === 'profile' ? (
+                                <StatsSection
+                                    history={history}
+                                    streak={streak}
+                                    currentCompletionRate={todayStats.progress}
+                                    chartStyle={chartStyle}
+                                    bigGoals={bigGoals}
+                                    habits={habits}
+                                    hiddenGoalIds={hiddenGoalIds}
+                                    onToggleVisibility={toggleGoalVisibility}
+                                    autoHideCompleted={autoHideCompleted}
+                                />
+                            ) : activeTab === 'weekly' ? (
+                                <WeekView
+                                    history={weekViewData}
+                                    viewingDate={viewingDate}
+                                    onNavigateToToday={() => { handleTabChange('focus'); setViewingDate('Today'); }}
+                                    onAddFutureTask={() => { }}
+                                    selectedDayIndex={weekSelectedDayIndex}
+                                    setSelectedDayIndex={setWeekSelectedDayIndex}
+                                />
+                            ) : activeTab === 'journal' ? (
+                                <JournalView
+                                    entries={journalEntries}
+                                    onAddEntry={handleAddJournalEntry}
+                                    onUpdateEntry={handleUpdateJournalEntry}
+                                    onCreateGoal={handleCreateFromAnalysis}
+                                    playSound={playSound}
+                                    dismissedSuggestions={dismissedSuggestions}
+                                    onDismissSuggestion={handleDismissSuggestion}
+                                />
+                            ) : (
+                                // FOCUS VIEW (Dashboard)
+                                <FocusView
+                                    viewMode={viewMode}
+                                    visibleHabits={visibleHabits}
+                                    sortedBigGoals={sortedBigGoals}
+                                    bigGoals={bigGoals}
+                                    isReadOnly={isReadOnly}
+                                    onToggleHabit={handleToggleHabit}
+                                    onOpenHabitModal={() => setIsHabitModalOpen(true)}
+                                    onOpenGoalModal={() => setIsGoalModalOpen(true)}
+                                    onEditHabit={handleEditHabit}
+                                    onDeleteHabit={handleDeleteHabit}
+                                    onAddBigGoalStep={addBigGoalStep}
+                                    onToggleBigGoalStep={toggleBigGoalStep}
+                                    onDeleteBigGoalStep={deleteBigGoalStep}
+                                    onDeleteBigGoal={deleteBigGoal}
+                                />
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
                 </section>
 
 
@@ -1167,7 +1195,7 @@ function App() {
             </main>
 
             {/* Bottom Navigation - Outside Main for full screen centering */}
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
             {/* Floating Action Button (Focus tab only) */}
             {activeTab === 'focus' && (
