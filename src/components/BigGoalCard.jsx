@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronDown, ChevronUp, Plus, Trash2, CheckCircle2, Circle, Check } from 'lucide-react';
 import { format, differenceInCalendarDays } from 'date-fns';
+import haptic from '../utils/haptic';
 
 export default function BigGoalCard({
     id,
@@ -9,6 +10,7 @@ export default function BigGoalCard({
     description,
     dueDate,
     theme = 'blue',
+    priority = null, // 'high' | 'medium' | 'low' | null
     subSteps = [],
     onToggleStep,
     onAddStep,
@@ -89,7 +91,7 @@ export default function BigGoalCard({
     };
 
     const handleStepClick = (stepId, isAlreadyCompleted) => {
-        // Sound removed
+        haptic.success();
         onToggleStep(id, stepId);
     };
 
@@ -101,25 +103,24 @@ export default function BigGoalCard({
             animate={isCompleted ? {
                 scale: [1, 1.02, 1],
                 rotate: [0, 1, -1, 0],
-                borderColor: '#10B981', // Emerald 500
-                backgroundColor: undefined // Use CSS class for background
             } : {
                 scale: 1,
                 rotate: 0,
-                borderColor: undefined, // Revert to class style
-                backgroundColor: undefined
             }}
             transition={{ duration: 0.5 }}
-            className={`relative rounded-xl card-hover border-l-4 ${urgencyBorder} ${isCompleted ? 'bg-[var(--color-bg-secondary)] opacity-75' : 'bg-[var(--color-surface)] border border-[var(--color-border-light)] shadow-[var(--shadow-card)]'} mb-4 overflow-hidden`}
+            className={`relative rounded-2xl card-hover ${isCompleted ? 'bg-[var(--color-bg-secondary)] opacity-75' : 'bg-[var(--color-surface)] border border-[var(--color-border-light)] shadow-[var(--shadow-card)]'} mb-4 overflow-hidden`}
         >
-            {/* Progress Bar at Top */}
+            {/* Progress Bar at Top - cleaner urgency indicator */}
             {!isCompleted && subSteps.length > 0 && (
-                <div className="absolute top-0 left-0 right-0 h-1 bg-[var(--color-border-light)]">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[var(--color-border-light)] rounded-t-2xl overflow-hidden">
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                         transition={{ duration: 0.5, ease: "easeOut" }}
-                        className="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] rounded-r"
+                        className={`h-full ${daysLeft !== null && daysLeft < 0 ? 'bg-[var(--color-error)]' :
+                                daysLeft !== null && daysLeft <= 3 ? 'bg-[var(--color-warning)]' :
+                                    'bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)]'
+                            }`}
                     />
                 </div>
             )}
@@ -163,7 +164,17 @@ export default function BigGoalCard({
                 </div>
 
                 <div className="flex-1">
-                    <h3 className={`text-sm font-bold leading-tight transition-colors ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-200'}`}>{title}</h3>
+                    <div className="flex items-center gap-2">
+                        <h3 className={`text-sm font-bold leading-tight transition-colors ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-200'}`}>{title}</h3>
+                        {priority && !isCompleted && (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' :
+                                priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' :
+                                    'bg-gray-100 dark:bg-neutral-700 text-gray-500 dark:text-gray-400'
+                                }`}>
+                                {priority === 'high' ? 'High' : priority === 'medium' ? 'Med' : 'Low'}
+                            </span>
+                        )}
+                    </div>
                     {description && <p className={`text-[10px] line-clamp-1 mt-0.5 ${isCompleted ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'}`}>{description}</p>}
                 </div>
                 {/* Minimalist Date Badge: Only show if urgent/overdue, otherwise subtle text */}

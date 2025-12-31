@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Mountain, Flag, RefreshCw, Minus, Trash2 } from 'lucide-react';
 import HabitCircle from '../components/HabitCircle';
 import HabitRow from '../components/HabitRow';
 import BigGoalCard from '../components/BigGoalCard';
+import EmptyState from '../components/EmptyState';
 
 const FocusView = ({
     viewMode,
@@ -25,6 +26,32 @@ const FocusView = ({
 }) => {
     const [isFabOpen, setIsFabOpen] = useState(false);
     const [isDeleteMode, setIsDeleteMode] = useState(false);
+    const scrollContainerRef = React.useRef(null);
+    const scrollPosRef = React.useRef(0);
+    const isTogglingRef = React.useRef(false);
+
+    const handleHabitToggle = (id) => {
+        // Blur active element to prevent browser auto-scrolling to follow focus
+        if (document.activeElement) {
+            document.activeElement.blur();
+        }
+        // Capture current scroll position before update
+        if (scrollContainerRef.current) {
+            scrollPosRef.current = scrollContainerRef.current.scrollLeft;
+            isTogglingRef.current = true;
+        }
+        onToggleHabit(id);
+    };
+
+    // Strictly restore scroll position after layout update if toggling
+    useLayoutEffect(() => {
+        if (isTogglingRef.current && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollLeft = scrollPosRef.current;
+            isTogglingRef.current = false;
+        }
+    }, [visibleHabits]);
+
+
 
     return (
         <div className="h-full w-full">
@@ -56,26 +83,42 @@ const FocusView = ({
                         )}
 
                         {/* Mobile: Horizontal Scroll | Desktop: Grid of Circles */}
-                        <div className="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto lg:overflow-visible pb-2 px-4 snap-x scrollbar-hide items-center lg:items-start lg:content-start">
-                            {visibleHabits.map(habit => (
-                                <div key={habit.id} className={`relative min-w-[72px] snap-start ${isDeleteMode ? 'animate-shake' : ''}`}>
-                                    <HabitCircle
-                                        {...habit}
-                                        onToggle={isReadOnly ? () => { } : (isDeleteMode ? () => onDeleteHabit(habit.id) : onToggleHabit)}
-                                    />
-                                    {isDeleteMode && (
-                                        <button
-                                            onClick={() => onDeleteHabit(habit.id)}
-                                            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
-                                        >
-                                            <Trash2 size={12} />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
+                        <div
+                            className="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto lg:overflow-visible pb-2 px-4 scrollbar-hide items-center lg:items-start lg:content-start"
+                        >
+                            <AnimatePresence mode="popLayout">
+                                {visibleHabits.map(habit => (
+                                    <motion.div
+                                        layout
+                                        key={habit.id}
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0.8, opacity: 0 }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                        className={`relative min-w-[72px] ${isDeleteMode ? 'animate-shake' : ''}`}
+                                    >
+                                        <HabitCircle
+                                            {...habit}
+                                            onToggle={isReadOnly ? () => { } : (isDeleteMode ? () => onDeleteHabit(habit.id) : handleHabitToggle)}
+                                        />
+                                        {isDeleteMode && (
+                                            <button
+                                                onClick={() => onDeleteHabit(habit.id)}
+                                                className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
 
                             {visibleHabits.length === 0 && (
-                                <div className="text-gray-400 text-xs text-center py-4 w-full">No habits yet</div>
+                                <EmptyState
+                                    type="habits"
+                                    action={!isReadOnly ? onOpenHabitModal : undefined}
+                                    actionLabel="Add Habit"
+                                />
                             )}
                         </div>
                     </div>
@@ -93,10 +136,11 @@ const FocusView = ({
                                 />
                             </div>
                         )) : (
-                            <div className="flex flex-col items-center justify-center py-12 text-center opacity-50">
-                                <Mountain size={48} className="text-gray-300 mb-2" />
-                                <p className="text-sm text-gray-500">No active adventures.</p>
-                            </div>
+                            <EmptyState
+                                type="goals"
+                                action={!isReadOnly ? onOpenGoalModal : undefined}
+                                actionLabel="Add Goal"
+                            />
                         )}
                     </div>
                 </div>
@@ -128,16 +172,26 @@ const FocusView = ({
                                 </button>
                             </div>
                         </div>
-                        <div className="space-y-1.5">
-                            {visibleHabits.map(habit => (
-                                <HabitRow
-                                    key={habit.id}
-                                    {...habit}
-                                    onToggle={isReadOnly ? () => { } : (isDeleteMode ? () => onDeleteHabit(habit.id) : onToggleHabit)}
-                                    isDeleteMode={isDeleteMode}
-                                    onDelete={onDeleteHabit}
-                                />
-                            ))}
+                        <div className="space-y-1.5 leading-none">
+                            <AnimatePresence mode="popLayout">
+                                {visibleHabits.map(habit => (
+                                    <motion.div
+                                        layout
+                                        key={habit.id}
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    >
+                                        <HabitRow
+                                            {...habit}
+                                            onToggle={isReadOnly ? () => { } : (isDeleteMode ? () => onDeleteHabit(habit.id) : handleHabitToggle)}
+                                            isDeleteMode={isDeleteMode}
+                                            onDelete={onDeleteHabit}
+                                        />
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
                             {visibleHabits.length === 0 && (
                                 <div className="text-gray-400 text-xs text-center py-6 bg-gray-50 dark:bg-neutral-900 rounded-xl">No habits yet. Tap "Add" to create one.</div>
                             )}
@@ -203,15 +257,23 @@ const FocusView = ({
                         </div>
                         <div className="overflow-y-auto space-y-1 scrollbar-hide flex-1">
                             {visibleHabits.map(habit => (
-                                <HabitRow
+                                <motion.div
+                                    layout
                                     key={habit.id}
-                                    {...habit}
-                                    onToggle={isReadOnly ? () => { } : (isDeleteMode ? () => onDeleteHabit(habit.id) : onToggleHabit)}
-                                    onEdit={isReadOnly ? undefined : onEditHabit}
-                                    onDelete={isReadOnly ? undefined : onDeleteHabit}
-                                    compact={true}
-                                    isDeleteMode={isDeleteMode}
-                                />
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -10 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                >
+                                    <HabitRow
+                                        {...habit}
+                                        onToggle={isReadOnly ? () => { } : (isDeleteMode ? () => onDeleteHabit(habit.id) : onToggleHabit)}
+                                        onEdit={isReadOnly ? undefined : onEditHabit}
+                                        onDelete={isReadOnly ? undefined : onDeleteHabit}
+                                        compact={true}
+                                        isDeleteMode={isDeleteMode}
+                                    />
+                                </motion.div>
                             ))}
                             {visibleHabits.length === 0 && (
                                 <div className="text-gray-400 text-[10px] text-center py-4">No habits</div>
@@ -252,60 +314,6 @@ const FocusView = ({
             )}
 
             {/* FAB Speed Dial (Only active on Focus/Daily view) */}
-            {!isReadOnly && (
-                <div className="fixed bottom-24 right-6 z-40 flex flex-col items-center gap-3"
-                    onMouseEnter={() => setIsFabOpen(true)}
-                    onMouseLeave={() => setIsFabOpen(false)}
-                >
-                    <AnimatePresence>
-                        {isFabOpen && (
-                            <>
-                                <motion.button
-                                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.8 }}
-                                    transition={{ delay: 0.05 }}
-                                    onClick={() => { onOpenGoalModal(); setIsFabOpen(false); }}
-                                    className="flex items-center gap-2 group"
-                                >
-                                    <span className="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity absolute right-12 whitespace-nowrap">
-                                        New Big Goal
-                                    </span>
-                                    <div className="w-10 h-10 bg-purple-600 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform">
-                                        <Flag size={20} />
-                                    </div>
-                                </motion.button>
-
-                                <motion.button
-                                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.8 }}
-                                    onClick={() => { onOpenHabitModal(); setIsFabOpen(false); }}
-                                    className="flex items-center gap-2 group"
-                                >
-                                    <span className="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity absolute right-12 whitespace-nowrap">
-                                        New Habit
-                                    </span>
-                                    <div className="w-10 h-10 bg-blue-500 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform">
-                                        <RefreshCw size={20} />
-                                    </div>
-                                </motion.button>
-                            </>
-                        )}
-                    </AnimatePresence>
-
-                    <motion.button
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setIsFabOpen(!isFabOpen)}
-                        className={`w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center text-white transition-colors ${isFabOpen ? 'bg-gray-800 rotate-45' : 'bg-blue-600'}`}
-                    >
-                        <Plus size={28} strokeWidth={2.5} className={`transition-transform duration-300 ${isFabOpen ? 'rotate-45' : ''}`} />
-                    </motion.button>
-                </div>
-            )}
         </div>
     );
 };

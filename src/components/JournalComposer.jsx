@@ -7,6 +7,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
     const [enableAI, setEnableAI] = useState(true); // Always On
     const [type, setType] = useState('daily'); // 'daily' | 'dream'
     const [text, setText] = useState('');
+    const [mood, setMood] = useState(null); // 'great' | 'good' | 'neutral' | 'meh' | 'sad' | null
     const [isRecording, setIsRecording] = useState(false);
 
     // Voice Recognition Refs
@@ -101,6 +102,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
             timestamp: new Date().toISOString(),
             type,
             content: text,
+            mood,
             audioUrl: null,
             tags: [],
             enableAI: true // Always On
@@ -108,6 +110,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
         if (onAddEntry) onAddEntry(newEntry);
         setText('');
+        setMood(null);
     };
 
     const handleTypeChange = (newType) => {
@@ -143,6 +146,31 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 </div>
             </div>
 
+            {/* Mood Selector (Hidden for later) */}
+            {false && (
+                <div className="flex items-center justify-center gap-2 mb-4">
+                    <span className="text-xs font-medium text-[var(--color-text-tertiary)] mr-2">Mood:</span>
+                    {[
+                        { id: 'sad', emoji: '😢' },
+                        { id: 'meh', emoji: '😕' },
+                        { id: 'neutral', emoji: '😐' },
+                        { id: 'good', emoji: '🙂' },
+                        { id: 'great', emoji: '😁' },
+                    ].map(m => (
+                        <button
+                            key={m.id}
+                            onClick={() => { setMood(mood === m.id ? null : m.id); if (playSound) playSound('click'); }}
+                            className={`text-2xl p-1.5 rounded-full transition-all ${mood === m.id
+                                ? 'scale-125 bg-[var(--color-primary)]/20 ring-2 ring-[var(--color-primary)]'
+                                : 'hover:scale-110 opacity-60 hover:opacity-100'
+                                }`}
+                        >
+                            {m.emoji}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* Input Area */}
             <div className={`relative rounded-2xl p-3 min-h-[120px] transition-colors ${type === 'dream' ? 'bg-indigo-50/50 dark:bg-indigo-900/20' : 'bg-gray-50 dark:bg-neutral-800'}`}>
                 <textarea
@@ -152,11 +180,23 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                     className="w-full h-full bg-transparent resize-none outline-none text-gray-700 dark:text-gray-200 text-base placeholder:text-gray-400 dark:placeholder:text-gray-500 min-h-[100px]"
                 />
 
-                {/* Visualizer for Recording state (Mock) */}
+                {/* Voice Recording Waveform */}
                 {isRecording && (
-                    <div className="absolute bottom-2 left-4 right-14 h-6 flex items-center space-x-1">
-                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-xs font-semibold text-red-500 animate-pulse">Recording...</span>
+                    <div className="absolute bottom-2 left-4 right-14 h-8 flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-lg px-3">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        <div className="flex items-center gap-0.5 h-full">
+                            {[...Array(7)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="w-1 bg-red-500 rounded-full animate-waveform"
+                                    style={{
+                                        height: `${Math.random() * 60 + 40}%`,
+                                        animationDelay: `${i * 0.1}s`,
+                                    }}
+                                />
+                            ))}
+                        </div>
+                        <span className="text-xs font-semibold text-red-600 dark:text-red-400 ml-2">Recording...</span>
                     </div>
                 )}
             </div>

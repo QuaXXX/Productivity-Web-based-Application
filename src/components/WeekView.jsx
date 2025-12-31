@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import HabitRow from './HabitRow';
 import DaySummaryCard from './DaySummaryCard';
+import CalendarHeatmap from './CalendarHeatmap';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 const WeekView = ({ history, viewingDate, onNavigateToToday, onAddFutureTask, selectedDayIndex, setSelectedDayIndex }) => {
@@ -98,6 +99,20 @@ const WeekView = ({ history, viewingDate, onNavigateToToday, onAddFutureTask, se
         return (
             <div className="flex flex-col h-full relative">
                 <div className="space-y-4 pb-16 overflow-y-auto h-full p-4">
+                    {/* Calendar Heatmap */}
+                    <CalendarHeatmap
+                        history={history}
+                        onDayClick={(day) => {
+                            // Find the index of this day in history
+                            const idx = history.findIndex(h =>
+                                h.date === day.dateKey ||
+                                (day.isToday && h.date === 'Today')
+                            );
+                            if (idx !== -1) handleDayClick(idx - startIndex);
+                        }}
+                    />
+
+                    {/* Day Cards List */}
                     {visibleHistory.length > 0 ? (
                         visibleHistory.map((day, i) => {
                             const isToday = day.date === 'Today';

@@ -26,7 +26,7 @@ const StatsSettings = ({ isOpen, onClose, chartStyle, onSetChartStyle, bigGoals 
                         animate={{ y: 0 }}
                         exit={{ y: "100%" }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="bg-[var(--color-surface)] w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl relative z-10"
+                        className="bg-[var(--color-surface)] w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl relative z-10 max-h-[85vh] overflow-y-auto"
                     >
 
                         <div className="flex justify-between items-center mb-6">
@@ -71,11 +71,11 @@ const StatsSettings = ({ isOpen, onClose, chartStyle, onSetChartStyle, bigGoals 
                             ))}
                         </div>
 
-                        {/* --- NEW SECTION: Manage Goals --- */}
+                        {/* --- Timeline Visibility Section --- */}
                         <div className="mb-8">
                             <div className="flex items-center gap-2 text-[var(--color-text-primary)] mb-4">
                                 <Activity size={20} className="text-[var(--color-text-tertiary)]" />
-                                <h3 className="text-md font-bold">Goal Visibility</h3>
+                                <h3 className="text-md font-bold">Timeline Visibility</h3>
                             </div>
 
                             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">

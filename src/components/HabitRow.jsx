@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Flame, MoreHorizontal, Trash2, Pencil } from 'lucide-react';
+import haptic from '../utils/haptic';
 
 const HabitRow = ({ id, title, icon, streak, isCompleted, onToggle, compact = false, onEdit, onDelete, isDeleteMode = false }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,11 +20,8 @@ const HabitRow = ({ id, title, icon, streak, isCompleted, onToggle, compact = fa
 
     return (
         <motion.div
-            layout
             id={`habit-${id}`}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            onClick={() => onToggle(id)}
+            onClick={() => { haptic.success(); onToggle(id); }}
             className={`
                 relative flex items-center justify-between rounded-xl border cursor-pointer select-none card-hover
                 ${compact ? 'p-2 mb-1' : 'p-3 mb-2'}

@@ -1,12 +1,15 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, AreaChart, Area } from 'recharts';
-import { Flame, TrendingUp, Calendar, Trophy, Activity, BarChart2, Flag } from 'lucide-react'; // Added icons
+import { Flame, TrendingUp, Calendar, Trophy, Activity, BarChart2, Flag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import GoalProgressPoster from './GoalProgressPoster';
+import GoalTimeline from './GoalTimeline';
+
+import StatsWidgetCards from './StatsWidgetCards';
 
 import useTheme from '../hooks/useTheme';
 
-const StatsSection = ({ history, streak, currentCompletionRate, chartStyle, bigGoals = [], hiddenGoalIds = [], onToggleVisibility, autoHideCompleted = false }) => {
+const StatsSection = ({ history, streak, currentCompletionRate, chartStyle, bigGoals = [], habits = [], hiddenGoalIds = [], onToggleVisibility, autoHideCompleted = false }) => {
     const [theme] = useTheme();
     const isDark = theme === 'dark';
 
@@ -100,24 +103,16 @@ const StatsSection = ({ history, streak, currentCompletionRate, chartStyle, bigG
         <div className="space-y-6 w-full mb-8">
             <h2 className="text-2xl font-bold px-4 pt-4 text-[var(--color-text-primary)]">Your Stats</h2>
 
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[var(--color-warning-light)] p-4 rounded-2xl border border-[var(--color-warning)]/30 flex flex-col items-center justify-center text-center card-hover">
-                    <div className={`bg-[var(--color-warning)]/20 p-2 rounded-full mb-2 ${streak >= 7 ? 'animate-fire' : ''}`}>
-                        <Flame className="w-6 h-6 text-[var(--color-warning)]" fill="currentColor" />
-                    </div>
-                    <span className="text-2xl font-bold text-[var(--color-text-primary)]">{streak}</span>
-                    <span className="text-xs font-semibold text-[var(--color-warning-dark)] uppercase tracking-wide">Day Streak</span>
-                </div>
+            {/* Stats Widget Cards (Swipeable) */}
+            <StatsWidgetCards
+                streak={streak}
+                completionRate={currentCompletionRate}
+                weeklyAvg={chartData.length > 0 ? Math.round(chartData.reduce((sum, d) => sum + d.value, 0) / chartData.length) : 0}
+                totalCompleted={habits.filter(h => h.isCompleted).length}
+            />
 
-                <div className="bg-[var(--color-primary-light)] p-4 rounded-2xl border border-[var(--color-primary)]/30 flex flex-col items-center justify-center text-center card-hover">
-                    <div className="bg-[var(--color-primary)]/20 p-2 rounded-full mb-2">
-                        <TrendingUp className="w-6 h-6 text-[var(--color-primary)]" />
-                    </div>
-                    <span className="text-2xl font-bold text-[var(--color-text-primary)]">{currentCompletionRate}%</span>
-                    <span className="text-xs font-semibold text-[var(--color-primary-dark)] uppercase tracking-wide">Today's Focus</span>
-                </div>
-            </div>
+            {/* AI Insights Panel */}
+
 
             {/* Main Progress Chart (Toggleable) */}
             <div className="bg-[var(--color-surface)] p-5 rounded-2xl shadow-[var(--shadow-card)] border border-[var(--color-border-light)] transition-colors duration-300">
@@ -134,53 +129,46 @@ const StatsSection = ({ history, streak, currentCompletionRate, chartStyle, bigG
                 </div>
             </div>
 
-            {/* Goal Progress Posters Section */}
-            <div>
-                <div className="flex justify-between items-center mb-4 px-1">
-                    <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                        <Flag size={16} /> Big Goal Progress
-                    </h3>
-                </div>
-
-                <div className="space-y-4">
-                    {bigGoals.filter(g => {
-                        const isHidden = hiddenGoalIds.includes(g.id);
+            {/* Goal Timelines Section - All Goals */}
+            {(() => {
+                // Filter goals based on visibility settings
+                const visibleGoals = bigGoals.filter(g => {
+                    // Exclude manually hidden goals
+                    if (hiddenGoalIds.includes(g.id)) return false;
+                    // Exclude completed goals if autoHideCompleted is on
+                    if (autoHideCompleted) {
                         const isCompleted = g.subSteps && g.subSteps.length > 0 && g.subSteps.every(s => s.isCompleted);
-                        if (autoHideCompleted && isCompleted) return false;
-                        return !isHidden;
-                    }).length > 0 ? (
-                        bigGoals
-                            .filter(g => {
-                                const isHidden = hiddenGoalIds.includes(g.id);
-                                const isCompleted = g.subSteps && g.subSteps.length > 0 && g.subSteps.every(s => s.isCompleted);
-                                if (autoHideCompleted && isCompleted) return false;
-                                return !isHidden;
-                            })
-                            .sort((a, b) => {
-                                const getIsCompleted = (g) => {
-                                    if (!g.subSteps || g.subSteps.length === 0) return false;
-                                    return g.subSteps.every(s => s.isCompleted);
-                                };
-                                const aCompleted = getIsCompleted(a);
-                                const bCompleted = getIsCompleted(b);
-                                if (aCompleted === bCompleted) return 0;
-                                return aCompleted ? 1 : -1; // Active first (0), Completed last (1)
-                            })
-                            .map(goal => (
-                                <GoalProgressPoster
-                                    key={goal.id}
-                                    goal={goal}
-                                    onHide={() => onToggleVisibility(goal.id)}
-                                />
-                            ))
-                    ) : (
-                        <div className="text-center py-8 bg-gray-50 dark:bg-neutral-900 rounded-2xl border border-dashed border-gray-200 dark:border-white/10">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">No visible goals.</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Check settings to manage visibility.</p>
+                        if (isCompleted) return false;
+                    }
+                    return true;
+                }).sort((a, b) => {
+                    // Show Completed on TOP
+                    const isCompletedA = a.subSteps && a.subSteps.length > 0 && a.subSteps.every(s => s.isCompleted);
+                    const isCompletedB = b.subSteps && b.subSteps.length > 0 && b.subSteps.every(s => s.isCompleted);
+                    if (isCompletedA && !isCompletedB) return -1;
+                    if (!isCompletedA && isCompletedB) return 1;
+                    return 0;
+                });
+
+                if (visibleGoals.length === 0) return null;
+
+                return (
+                    <div>
+                        <div className="flex justify-between items-center mb-4 px-1">
+                            <h3 className="text-sm font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest flex items-center gap-2">
+                                <Calendar size={16} /> Goal Timelines
+                            </h3>
                         </div>
-                    )}
-                </div>
-            </div>
+                        <div className="space-y-3">
+                            {visibleGoals.map(goal => (
+                                <GoalTimeline key={goal.id} goal={goal} />
+                            ))}
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* AI Insights Panel (Moved to Bottom) */}
 
         </div>
     );

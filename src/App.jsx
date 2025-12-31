@@ -12,6 +12,7 @@ import useSoundEffects from './hooks/useSoundEffects';
 import { analyzeEntry } from './services/geminiService';
 
 import StatsSettings from './components/StatsSettings';
+import FloatingActionButton from './components/FloatingActionButton';
 import BottomNav from './components/BottomNav';
 import CreateGoalModal from './components/CreateGoalModal';
 import CreateHabitModal from './components/CreateHabitModal';
@@ -98,7 +99,45 @@ function App() {
     const habitsListRef = useRef(null);
     const goalsListRef = useRef(null);
 
+    // --- Swipe Navigation State ---
+    const TAB_ORDER = ['focus', 'weekly', 'journal', 'profile'];
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+    const minSwipeDistance = 50;
 
+    const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        const currentIndex = TAB_ORDER.indexOf(activeTab);
+        if (isLeftSwipe && currentIndex < TAB_ORDER.length - 1) {
+            setActiveTab(TAB_ORDER[currentIndex + 1]);
+        }
+        if (isRightSwipe && currentIndex > 0) {
+            setActiveTab(TAB_ORDER[currentIndex - 1]);
+        }
+
+        setTouchStart(null);
+        setTouchEnd(null);
+    };
+
+    // --- Collapsing Header State ---
+    const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+    const handleContentScroll = (e) => {
+        const scrollTop = e.target.scrollTop;
+        setIsHeaderCollapsed(scrollTop > 60);
+    };
 
     // --- Persistence & Initialization ---
     // 1. Daily Habits (Persistent, with resets)
@@ -508,7 +547,8 @@ function App() {
                     ...h,
                     isCompleted: newStatus,
                     streak: newStreak,
-                    lastCompletedDate: newLastCompletedDate
+                    lastCompletedDate: newLastCompletedDate,
+                    completedTimestamp: newStatus ? Date.now() : null
                 };
             }
             return h;
@@ -864,28 +904,41 @@ function App() {
     const isTodayView = viewingDate === 'Today';
 
     const visibleHabits = useMemo(() => {
-        if (isTodayView) return habits;
+        let list = [];
+        if (isTodayView) {
+            list = [...habits];
+        } else {
+            // Future: Show habits as templates (to do)
+            const viewDateObj = parseISO(viewingDate);
+            if (differenceInCalendarDays(viewDateObj, new Date()) > 0) {
+                list = habits.map(h => ({ ...h, isCompleted: false, streak: 0 }));
+            } else {
+                // Past: Search history
+                const entry = history.find(day => {
+                    const dayKey = day.dateKey || day.fullDate;
+                    return dayKey === viewingDate;
+                });
 
-        // Future: Show habits as templates (to do)
-        const viewDateObj = parseISO(viewingDate);
-        if (differenceInCalendarDays(viewDateObj, new Date()) > 0) {
-            return habits.map(h => ({ ...h, isCompleted: false, streak: 0 }));
+                if (entry && entry.goals) {
+                    list = entry.goals.map(g => ({
+                        ...g,
+                        streak: 0,
+                        isCompleted: g.isCompleted,
+                    }));
+                }
+            }
         }
 
-        // Past: Search history
-        const entry = history.find(day => {
-            const dayKey = day.dateKey || day.fullDate;
-            return dayKey === viewingDate;
+        // Sort: Uncompleted First, then by Completion Time (Recent First)
+        return list.sort((a, b) => {
+            if (!!a.isCompleted !== !!b.isCompleted) {
+                return a.isCompleted ? 1 : -1;
+            }
+            if (a.isCompleted) {
+                return (b.completedTimestamp || 0) - (a.completedTimestamp || 0);
+            }
+            return 0;
         });
-
-        if (entry && entry.goals) {
-            return entry.goals.map(g => ({
-                ...g,
-                streak: 0,
-                isCompleted: g.isCompleted,
-            }));
-        }
-        return [];
     }, [viewingDate, habits, history, isTodayView]);
 
     // --- Render Helpers ---
@@ -926,8 +979,8 @@ function App() {
 
             <main className="max-w-4xl w-full space-y-4 flex flex-col h-[calc(100vh-24px)] relative">
 
-                {/* Header & Toggle (Mobile Aesthetic) */}
-                <header className="flex flex-col space-y-4 px-4 pt-2 flex-shrink-0 relative z-20">
+                {/* Header & Toggle (Mobile Aesthetic) - Collapsible on Scroll */}
+                <header className={`flex flex-col px-4 pt-2 flex-shrink-0 relative z-20 transition-all duration-300 ${isHeaderCollapsed ? 'space-y-1 py-1' : 'space-y-4'}`}>
                     <div className="flex items-center justify-between">
                         {/* Left: Date / Greeting with Progress Ring */}
                         <div className="flex items-center gap-3">
@@ -963,12 +1016,13 @@ function App() {
                                 </div>
                             )}
                             <div className="flex flex-col">
-                                {(activeTab === 'focus' || activeTab === 'weekly') && (
-                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                {/* Subtitle - hidden when collapsed */}
+                                {(activeTab === 'focus' || activeTab === 'weekly') && !isHeaderCollapsed && (
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest transition-opacity duration-300">
                                         {getHeaderSubtitle()}
                                     </span>
                                 )}
-                                <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 leading-tight" style={{ fontFamily: '"Inter", sans-serif' }}>
+                                <h1 className={`font-bold tracking-tight text-gray-900 dark:text-gray-100 leading-tight transition-all duration-300 ${isHeaderCollapsed ? 'text-lg' : 'text-2xl'}`} style={{ fontFamily: '"Inter", sans-serif' }}>
                                     {getHeaderDateLabel()}
                                 </h1>
                             </div>
@@ -1007,49 +1061,51 @@ function App() {
                                     <Settings size={20} />
                                 </button>
                             )}
-
-                            {/* Layout Switcher (Focus Mode Only) */}
-                            {activeTab === 'focus' && (
-                                <div className="flex items-center bg-gray-100 dark:bg-neutral-800 p-1 rounded-lg">
-                                    <button
-                                        onClick={() => setViewMode('focus')}
-                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'focus' ? 'bg-white dark:bg-neutral-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500'}`}
-                                    >
-                                        <div className="grid grid-cols-2 gap-0.5 w-3.5 h-3.5">
-                                            <div className="bg-current rounded-[0.5px]" />
-                                            <div className="bg-current rounded-[0.5px]" />
-                                            <div className="bg-current rounded-[0.5px]" />
-                                            <div className="bg-current rounded-[0.5px]" />
-                                        </div>
-                                    </button>
-                                    <button
-                                        onClick={() => setViewMode('list')}
-                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-neutral-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500'}`}
-                                    >
-                                        <div className="flex flex-col gap-0.5 w-3.5 h-3.5 justify-center">
-                                            <div className="bg-current h-0.5 rounded-full w-full" />
-                                            <div className="bg-current h-0.5 rounded-full w-full" />
-                                            <div className="bg-current h-0.5 rounded-full w-full" />
-                                        </div>
-                                    </button>
-                                    <button
-                                        onClick={() => setViewMode('command')}
-                                        className={`hidden md:block p-1.5 rounded-md transition-all ${viewMode === 'command' ? 'bg-white dark:bg-neutral-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500'}`} // Hide on mobile
-                                    >
-                                        <div className="flex gap-0.5 w-3.5 h-3.5">
-                                            <div className="bg-current w-1/3 rounded-[0.5px] h-full" />
-                                            <div className="bg-current w-2/3 rounded-[0.5px] h-full" />
-                                        </div>
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </div>
+
+                    {/* Segmented View Mode Tabs (Focus tab only) */}
+                    {activeTab === 'focus' && !isHeaderCollapsed && (
+                        <div className="flex bg-[var(--color-bg-secondary)] p-1 rounded-xl relative">
+                            {/* Sliding Indicator */}
+                            <motion.div
+                                layoutId="viewModeIndicator"
+                                className="absolute inset-y-1 bg-[var(--color-surface)] rounded-lg shadow-sm"
+                                style={{ width: 'calc(50% - 4px)' }}
+                                animate={{
+                                    left: viewMode === 'focus' ? '4px' : 'calc(50% + 2px)'
+                                }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            />
+
+                            {[
+                                { id: 'focus', label: 'Feed' },
+                                { id: 'list', label: 'List' },
+                            ].map((mode) => (
+                                <button
+                                    key={mode.id}
+                                    onClick={() => setViewMode(mode.id)}
+                                    className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${viewMode === mode.id
+                                        ? 'text-[var(--color-text-primary)]'
+                                        : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                                        }`}
+                                >
+                                    {mode.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </header>
 
-                {/* Content Area */}
+                {/* Content Area - Swipeable */}
 
-                <section className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-6 pb-16">
+                <section
+                    className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-6 pb-16"
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                    onScroll={handleContentScroll}
+                >
                     {activeTab === 'profile' ? (
                         <StatsSection
                             history={history}
@@ -1057,6 +1113,7 @@ function App() {
                             currentCompletionRate={todayStats.progress}
                             chartStyle={chartStyle}
                             bigGoals={bigGoals}
+                            habits={habits}
                             hiddenGoalIds={hiddenGoalIds}
                             onToggleVisibility={toggleGoalVisibility}
                             autoHideCompleted={autoHideCompleted}
@@ -1111,6 +1168,15 @@ function App() {
 
             {/* Bottom Navigation - Outside Main for full screen centering */}
             <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+            {/* Floating Action Button (Focus tab only) */}
+            {activeTab === 'focus' && (
+                <FloatingActionButton
+                    onAddHabit={() => setIsHabitModalOpen(true)}
+                    onAddGoal={() => setIsGoalModalOpen(true)}
+                    onAddEntry={() => setActiveTab('journal')}
+                />
+            )}
 
             {/* Stats Settings Modal (Moved out of invalid location if it was there) */}
             {/* The previous random props hanging here were bugs. Removed. */}
