@@ -15,8 +15,8 @@ const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, total
             label: 'Current Streak',
             value: streak,
             unit: 'days',
-            color: isDark ? '#FB923C' : '#EA580C', // Orange-400 (Dark) vs Orange-600 (Light)
-            bg: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED' // Orange with opacity (Dark) vs Orange-50 (Light)
+            color: isDark ? '#FB923C' : '#EA580C',
+            bg: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED'
         },
         {
             icon: Target,
@@ -44,38 +44,43 @@ const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, total
         }
     ];
 
-    const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % widgets.length);
-    const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + widgets.length) % widgets.length);
+    const handleScroll = () => {
+        if (containerRef.current) {
+            const scrollLeft = containerRef.current.scrollLeft;
+            const width = containerRef.current.offsetWidth;
+            const index = Math.round(scrollLeft / width);
+            setCurrentIndex(index);
+        }
+    };
+
+    const scrollToWidget = (index) => {
+        if (containerRef.current) {
+            const width = containerRef.current.offsetWidth;
+            containerRef.current.scrollTo({
+                left: width * index,
+                behavior: 'smooth'
+            });
+        }
+    };
 
     return (
         <div className="relative">
             {/* Carousel Container */}
             <div
                 ref={containerRef}
-                className="overflow-hidden rounded-2xl"
+                onScroll={handleScroll}
+                className="overflow-x-auto flex snap-x snap-mandatory scroll-smooth pb-4 -mb-4 scrollbar-hide"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} // Hide scrollbar
             >
-                <motion.div
-                    className="flex touch-pan-y" // Allow vertical scroll while touching
-                    animate={{ x: `-${currentIndex * 100}%` }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.2}
-                    onDragEnd={(e, { offset, velocity }) => {
-                        const swipe = offset.x;
-                        if (swipe < -50) {
-                            nextSlide();
-                        } else if (swipe > 50) {
-                            prevSlide();
-                        }
-                    }}
-                >
-                    {widgets.map((widget, i) => {
-                        const Icon = widget.icon;
-                        return (
+                {widgets.map((widget, i) => {
+                    const Icon = widget.icon;
+                    return (
+                        <div
+                            key={i}
+                            className="min-w-full snap-center px-1" // Add padding to separate slightly or use gap
+                        >
                             <div
-                                key={i}
-                                className="min-w-full p-6 rounded-2xl border border-[var(--color-border-light)] select-none" // select-none for drag
+                                className="p-6 rounded-2xl border border-[var(--color-border-light)]"
                                 style={{ backgroundColor: widget.bg }}
                             >
                                 <div className="flex items-center justify-between">
@@ -100,9 +105,9 @@ const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, total
                                     </div>
                                 </div>
                             </div>
-                        );
-                    })}
-                </motion.div>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Navigation Dots */}
@@ -110,7 +115,7 @@ const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, total
                 {widgets.map((_, i) => (
                     <button
                         key={i}
-                        onClick={() => setCurrentIndex(i)}
+                        onClick={() => scrollToWidget(i)}
                         className={`w-2 h-2 rounded-full transition-all ${i === currentIndex
                             ? 'w-6 bg-[var(--color-primary)]'
                             : 'bg-[var(--color-border-default)] hover:bg-[var(--color-text-tertiary)]'
@@ -118,20 +123,6 @@ const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, total
                     />
                 ))}
             </div>
-
-            {/* Arrow Controls - positioned outside (Hidden on Mobile) */}
-            <button
-                onClick={prevSlide}
-                className="hidden md:flex absolute -left-3 top-[40%] -translate-y-1/2 w-7 h-7 rounded-full bg-[var(--color-surface)] shadow-md items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-light)] z-10"
-            >
-                <ChevronLeft size={16} />
-            </button>
-            <button
-                onClick={nextSlide}
-                className="hidden md:flex absolute -right-3 top-[40%] -translate-y-1/2 w-7 h-7 rounded-full bg-[var(--color-surface)] shadow-md items-center justify-center text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-light)] z-10"
-            >
-                <ChevronRight size={16} />
-            </button>
         </div>
     );
 };

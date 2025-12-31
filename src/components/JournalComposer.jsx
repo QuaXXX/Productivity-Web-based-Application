@@ -12,6 +12,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
     // Voice Recognition Refs
     const recognitionRef = useRef(null);
+    const shouldStopRef = useRef(false);
 
     // ... [UseEffect for Speech skipped for brevity in replacement, assuming partial update logic]
     // Wait, I need to match the StartLine/EndLine or replace the whole file. 
@@ -38,7 +39,19 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
                 recognition.onend = () => {
                     console.log('Voice recognition ended');
-                    setIsRecording(false);
+                    // Only stop state if explicitly requested
+                    if (shouldStopRef.current) {
+                        setIsRecording(false);
+                    } else {
+                        // Otherwise restart (handle silence timeout)
+                        console.log('Restarting voice recognition...');
+                        try {
+                            recognition.start();
+                        } catch (e) {
+                            console.error("Restart error:", e);
+                            setIsRecording(false);
+                        }
+                    }
                 };
 
                 recognition.onresult = (event) => {
@@ -84,8 +97,10 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
         try {
             if (isRecording) {
+                shouldStopRef.current = true;
                 recognitionRef.current.stop();
             } else {
+                shouldStopRef.current = false;
                 recognitionRef.current.start();
             }
         } catch (e) {

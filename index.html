@@ -10,6 +10,17 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#000000">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script>
+    (function () {
+      try {
+        var localTheme = localStorage.getItem('productivity_theme');
+        var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+        if (localTheme === 'dark' || (!localTheme && supportDarkMode)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) { }
+    })();
+  </script>
   <title>Productivity PWA</title>
 </head>
 

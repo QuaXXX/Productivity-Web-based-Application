@@ -58,10 +58,17 @@ function App() {
     const [isStatsSettingsOpen, setIsStatsSettingsOpen] = useState(false);
 
     // Slide Transition State
+    // Slide Transition State
     const [slideDirection, setSlideDirection] = useState(0);
+
+    // Scroll to Top handled in handleTabChange for immediate effect
 
     const handleTabChange = (newTab) => {
         if (newTab === activeTab) return;
+
+        // Scroll to top immediately BEFORE state change to prevent "snap" after transition
+        window.scrollTo({ top: 0, behavior: 'instant' });
+
         const TAB_ORDER = ['focus', 'weekly', 'journal', 'profile'];
         const oldIndex = TAB_ORDER.indexOf(activeTab);
         const newIndex = TAB_ORDER.indexOf(newTab);
@@ -113,6 +120,11 @@ function App() {
     const minSwipeDistance = 50;
 
     const onTouchStart = (e) => {
+        // Prevent global swipe if touching an internal horizontal scroll container
+        if (e.target.closest('.overflow-x-auto')) {
+            setTouchStart(null);
+            return;
+        }
         setTouchEnd(null);
         setTouchStart(e.targetTouches[0].clientX);
     };
