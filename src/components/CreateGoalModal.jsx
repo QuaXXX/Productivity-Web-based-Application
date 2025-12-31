@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Calendar, Type, Palette, AlignLeft } from 'lucide-react';
 import DatePicker from './DatePicker';
+import haptic from '../utils/haptic';
 
 export default function CreateGoalModal({ isOpen, onClose, onCreate, initialData }) {
     const [title, setTitle] = useState('');
@@ -55,6 +56,8 @@ export default function CreateGoalModal({ isOpen, onClose, onCreate, initialData
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!title.trim()) return;
+
+        haptic.success();
 
         // Append the "Final Goal" step
         const finalStep = {
@@ -243,7 +246,7 @@ export default function CreateGoalModal({ isOpen, onClose, onCreate, initialData
                     <button
                         type="submit"
                         disabled={!title.trim()}
-                        className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
+                        className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-blue-900/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                     >
                         Create Goal
                     </button>

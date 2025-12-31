@@ -1,8 +1,19 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Settings, BarChart2, TrendingUp, Activity, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
+import haptic from '../utils/haptic';
 
 const StatsSettings = ({ isOpen, onClose, chartStyle, onSetChartStyle, bigGoals = [], hiddenGoalIds = [], onToggleGoalVisibility, autoHideCompleted, onToggleAutoHide, onFreshStart }) => {
+    const handleFreshStart = () => {
+        haptic.error(); // Warning vibration
+        onFreshStart();
+    };
+
+    const handleClose = () => {
+        haptic.light();
+        onClose();
+    };
+
     const styles = [
         { id: 'bar', label: 'Bar Chart (Standard)', icon: BarChart2 },
         { id: 'line', label: 'Line Chart (Trend)', icon: TrendingUp },
@@ -123,16 +134,16 @@ const StatsSettings = ({ isOpen, onClose, chartStyle, onSetChartStyle, bigGoals 
 
                         <div className="pt-4 flex flex-col gap-3">
                             <button
-                                onClick={onFreshStart}
-                                className="w-full py-3 bg-red-50 text-red-600 font-medium rounded-xl hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                                onClick={handleFreshStart}
+                                className="w-full py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-all flex items-center justify-center gap-2 active:scale-95"
                             >
                                 <Trash2 size={18} />
                                 Reset Data
                             </button>
 
                             <button
-                                onClick={onClose}
-                                className="w-full py-3 bg-[var(--color-primary)] text-white font-semibold rounded-xl hover:bg-[var(--color-primary-dark)] shadow-md transition-all"
+                                onClick={handleClose}
+                                className="w-full py-3 bg-[var(--color-primary)] text-white font-semibold rounded-xl hover:bg-[var(--color-primary-dark)] shadow-md transition-all active:scale-95"
                             >
                                 Done
                             </button>

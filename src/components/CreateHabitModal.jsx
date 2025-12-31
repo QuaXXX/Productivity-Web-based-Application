@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Sparkles } from 'lucide-react';
+import haptic from '../utils/haptic';
 
 export default function CreateHabitModal({ isOpen, onClose, onCreate }) {
     const [title, setTitle] = useState('');
@@ -12,6 +13,7 @@ export default function CreateHabitModal({ isOpen, onClose, onCreate }) {
         e.preventDefault();
         if (!title.trim()) return;
 
+        haptic.success();
         onCreate({ title: title.trim(), icon });
         setTitle('');
         setIcon('📝');
@@ -75,7 +77,7 @@ export default function CreateHabitModal({ isOpen, onClose, onCreate }) {
                     <button
                         type="submit"
                         disabled={!title.trim()}
-                        className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50"
+                        className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 active:scale-95"
                     >
                         Start Habit
                     </button>

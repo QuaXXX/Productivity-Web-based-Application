@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sun, Moon, Mic, Send, Square } from 'lucide-react';
 import { polishText } from '../utils/textPolisher';
+import haptic from '../utils/haptic';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -79,10 +80,20 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 console.error("SpeechRecognition init failed:", e);
             }
         }
+
+        // Cleanup function to kill zombie listeners
+        return () => {
+            if (recognitionRef.current) {
+                console.log("Cleaning up voice recognition...");
+                recognitionRef.current.onend = null; // Prevent restart loop
+                recognitionRef.current.stop();
+            }
+        };
     }, []);
 
     const toggleRecording = async () => {
         if (playSound) playSound('click');
+        haptic.light();
 
         if (!recognitionRef.current) {
             if (SpeechRecognition) {
@@ -98,6 +109,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 // STOP
                 shouldStopRef.current = true;
                 recognitionRef.current.stop();
+                haptic.success();
             } else {
                 // START
                 shouldStopRef.current = false;
@@ -123,6 +135,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
         if (!finalText.trim()) return;
         if (playSound) playSound('success');
+        haptic.success();
 
         const newEntry = {
             id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).substr(2)),

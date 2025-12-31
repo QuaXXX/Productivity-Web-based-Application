@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Sparkles, Target, BookOpen } from 'lucide-react';
+import haptic from '../utils/haptic';
 
 const FloatingActionButton = ({ onAddHabit, onAddGoal, onAddEntry }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -12,8 +13,14 @@ const FloatingActionButton = ({ onAddHabit, onAddGoal, onAddEntry }) => {
     ];
 
     const handleActionClick = (action) => {
+        haptic.light();
         action.onClick?.();
         setIsOpen(false);
+    };
+
+    const toggleFab = () => {
+        haptic.light();
+        setIsOpen(!isOpen);
     };
 
     return (
@@ -30,7 +37,7 @@ const FloatingActionButton = ({ onAddHabit, onAddGoal, onAddEntry }) => {
                                 exit={{ opacity: 0, scale: 0, y: 20 }}
                                 transition={{ delay: index * 0.05, type: 'spring', stiffness: 400, damping: 20 }}
                                 onClick={() => handleActionClick(action)}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg ${action.color} text-white font-medium text-sm`}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg ${action.color} text-white font-medium text-sm active:scale-95 transition-transform`}
                             >
                                 <action.icon size={18} />
                                 <span>{action.label}</span>
@@ -42,13 +49,13 @@ const FloatingActionButton = ({ onAddHabit, onAddGoal, onAddEntry }) => {
 
             {/* Main FAB Button */}
             <motion.button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={toggleFab}
                 whileTap={{ scale: 0.9 }}
                 animate={{ rotate: isOpen ? 45 : 0 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                 className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors ${isOpen
-                        ? 'bg-[var(--color-text-primary)] text-[var(--color-surface)]'
-                        : 'bg-[var(--color-primary)] text-white'
+                    ? 'bg-[var(--color-text-primary)] text-[var(--color-surface)]'
+                    : 'bg-[var(--color-primary)] text-white'
                     }`}
             >
                 {isOpen ? <X size={24} /> : <Plus size={24} strokeWidth={2.5} />}

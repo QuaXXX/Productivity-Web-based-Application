@@ -1026,7 +1026,7 @@ function App() {
                             {activeTab === 'profile' && (
                                 <button
                                     onClick={() => setIsStatsSettingsOpen(true)}
-                                    className="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200"
+                                    className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
                                 >
                                     <Settings size={20} />
                                 </button>

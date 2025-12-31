@@ -1,5 +1,6 @@
 import React from 'react';
 import { Target, Book, BarChart2, Calendar, History } from 'lucide-react';
+import haptic from '../utils/haptic';
 
 const BottomNav = ({ activeTab, onTabChange }) => {
     const tabs = [
@@ -8,6 +9,13 @@ const BottomNav = ({ activeTab, onTabChange }) => {
         { id: 'journal', label: 'Journal', icon: Book },
         { id: 'profile', label: 'Stats', icon: BarChart2 },
     ];
+
+    const handleTabPress = (tabId) => {
+        if (tabId !== activeTab) {
+            haptic.light();
+        }
+        onTabChange(tabId);
+    };
 
     return (
         <nav className="fixed bottom-0 w-full bg-[var(--color-surface)] border-t border-[var(--color-border-default)] pb-safe z-40 flex justify-center transition-all duration-300 nav-shadow">
@@ -18,8 +26,8 @@ const BottomNav = ({ activeTab, onTabChange }) => {
                     return (
                         <button
                             key={tab.id}
-                            onClick={() => onTabChange(tab.id)}
-                            className="relative flex flex-col items-center justify-center h-full group"
+                            onClick={() => handleTabPress(tab.id)}
+                            className="relative flex flex-col items-center justify-center h-full group active:scale-95 transition-transform"
                         >
                             <div className={`
                                 p-2.5 rounded-2xl transition-all duration-300 ease-out

@@ -1,14 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import haptic from '../utils/haptic';
 
 const HabitCircle = ({ id, title, icon, isCompleted, onToggle }) => {
+    const handleToggle = () => {
+        haptic.success();
+        onToggle(id);
+    };
+
     return (
         <motion.div
             id={`habit-${id}`}
             whileTap={{ scale: 0.9 }}
             className="flex flex-col items-center space-y-2 cursor-pointer group min-w-[72px]"
-            onClick={() => onToggle(id)}
+            onClick={handleToggle}
         >
             <div className={`
                 relative w-[68px] h-[68px] rounded-full flex items-center justify-center text-3xl
