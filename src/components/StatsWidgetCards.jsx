@@ -1,10 +1,13 @@
 import React, { useState, useRef } from 'react';
+import useTheme from '../hooks/useTheme';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, Target, TrendingUp, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, totalCompleted = 0 }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const containerRef = useRef(null);
+    const [theme] = useTheme();
+    const isDark = theme === 'dark';
 
     const widgets = [
         {
@@ -12,8 +15,8 @@ const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, total
             label: 'Current Streak',
             value: streak,
             unit: 'days',
-            color: 'var(--color-warning)',
-            bg: 'var(--color-warning-light)'
+            color: isDark ? '#FB923C' : '#EA580C', // Orange-400 (Dark) vs Orange-600 (Light)
+            bg: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED' // Orange with opacity (Dark) vs Orange-50 (Light)
         },
         {
             icon: Target,

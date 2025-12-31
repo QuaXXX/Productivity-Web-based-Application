@@ -989,7 +989,7 @@ function App() {
             {/* Modals moved to bottom of component to avoid duplicate rendering */}
 
 
-            <main className="max-w-4xl w-full space-y-4 flex flex-col h-[calc(100vh-24px)] relative">
+            <main className={`max-w-4xl w-full flex flex-col h-[calc(100vh-24px)] relative transition-all duration-300 ${isHeaderCollapsed ? 'space-y-0' : 'space-y-4'}`}>
 
                 {/* Header & Toggle (Mobile Aesthetic) - Collapsible on Scroll */}
                 <header className={`flex flex-col px-4 pt-2 flex-shrink-0 relative z-20 transition-all duration-300 ${isHeaderCollapsed ? 'space-y-1 py-1' : 'space-y-4'}`}>
@@ -1050,19 +1050,7 @@ function App() {
                                 {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                             </button>
 
-                            {/* Calendar Picker */}
-                            {(activeTab === 'focus' || activeTab === 'weekly') && (
-                                <DatePicker
-                                    value={viewingDate === 'Today' ? format(new Date(), 'yyyy-MM-dd') : viewingDate}
-                                    onChange={(dateStr) => handleDateChange({ target: { value: dateStr } })}
-                                    maxDate={addDays(new Date(), 1)}
-                                    customTrigger={(
-                                        <button className="p-2 bg-gray-100 dark:bg-neutral-800 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors">
-                                            <Calendar size={20} />
-                                        </button>
-                                    )}
-                                />
-                            )}
+                            {/* Calendar Picker Removed */}
 
                             {/* Profile Settings (Only on Profile) */}
                             {activeTab === 'profile' && (
@@ -1112,7 +1100,7 @@ function App() {
                 {/* Content Area - Swipeable */}
 
                 <section
-                    className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-6 pb-16"
+                    className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-6 pb-40"
                     onTouchStart={onTouchStart}
                     onTouchMove={onTouchMove}
                     onTouchEnd={onTouchEnd}
