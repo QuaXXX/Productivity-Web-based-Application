@@ -2,11 +2,20 @@
     "name": "Productivity PWA",
     "short_name": "Productivity",
     "description": "A productivity progressive web application.",
+    "categories": [
+        "productivity"
+    ],
     "theme_color": "#000000",
     "background_color": "#000000",
-    "display": "standalone",
+    "display": "fullscreen",
+    "display_override": [
+        "window-controls-overlay",
+        "standalone",
+        "minimal-ui"
+    ],
     "orientation": "portrait",
     "id": "/",
+    "scope": "/",
     "start_url": "/",
     "icons": [
         {
