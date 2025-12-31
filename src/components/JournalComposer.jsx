@@ -26,7 +26,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
             try {
                 const recognition = new SpeechRecognition();
                 recognition.continuous = true;
-                recognition.interimResults = true; // ENABLE real-time updates
+                recognition.interimResults = true;
                 recognition.maxAlternatives = 1;
                 recognition.lang = 'en-US';
 
@@ -52,25 +52,17 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 };
 
                 recognition.onresult = (event) => {
-                    let interimTranscript = '';
-                    let finalTranscript = '';
+                    // ONLY process the CURRENT result, not all historical ones
+                    const result = event.results[event.results.length - 1];
+                    const transcript = result[0].transcript;
 
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript;
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
-
-                    // Show interim text in real-time
-                    setInterimText(interimTranscript);
-
-                    // Append final text
-                    if (finalTranscript) {
-                        setText(prev => prev + (prev ? ' ' : '') + finalTranscript);
+                    if (result.isFinal) {
+                        // Final result - append to text and clear interim
+                        setText(prev => prev + (prev ? ' ' : '') + transcript.trim());
                         setInterimText('');
+                    } else {
+                        // Interim result - just show preview
+                        setInterimText(transcript);
                     }
                 };
 
@@ -105,24 +97,29 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 recognitionRef.current.stop();
                 setInterimText('');
 
-                // Trigger AI polish with current state
-                const currentText = textRef.current;
-                if (currentText && currentText.trim()) {
-                    setIsPolishing(true);
-                    try {
-                        const polished = await polishTranscript(currentText);
-                        if (polished && polished.trim()) {
-                            setText(polished);
+                // Wait a moment for final results to process, then polish
+                setTimeout(async () => {
+                    const currentText = textRef.current;
+                    console.log("Attempting to polish:", currentText);
+                    if (currentText && currentText.trim()) {
+                        setIsPolishing(true);
+                        try {
+                            const polished = await polishTranscript(currentText);
+                            console.log("Polished result:", polished);
+                            if (polished && polished.trim() && polished !== currentText) {
+                                setText(polished);
+                            }
+                        } catch (e) {
+                            console.error("Polish error:", e);
+                        } finally {
+                            setIsPolishing(false);
                         }
-                    } catch (e) {
-                        console.error("Polish error:", e);
-                    } finally {
-                        setIsPolishing(false);
                     }
-                }
+                }, 500);
             } else {
                 // START recording
                 shouldStopRef.current = false;
+                setText(''); // Clear previous text when starting new recording
                 recognitionRef.current.start();
             }
         } catch (e) {
@@ -156,9 +153,6 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         setType(newType);
     }
 
-    // Combined display text (final + interim in gray)
-    const displayText = text + (interimText ? (text ? ' ' : '') + interimText : '');
-
     return (
         <div className="bg-[var(--color-surface)] rounded-3xl p-4 shadow-[var(--shadow-card)] border border-[var(--color-border-light)] transition-colors duration-500">
             {/* Toggle Header */}
@@ -190,7 +184,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
             {/* Input Area */}
             <div className={`relative rounded-2xl p-3 min-h-[120px] transition-colors ${type === 'dream' ? 'bg-indigo-50/50 dark:bg-indigo-900/20' : 'bg-gray-50 dark:bg-neutral-800'}`}>
                 <textarea
-                    value={displayText}
+                    value={text + (interimText ? (text ? ' ' : '') + interimText : '')}
                     onChange={(e) => {
                         if (!isRecording) {
                             setText(e.target.value);
@@ -200,49 +194,58 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                     className="w-full h-full bg-transparent resize-none outline-none text-gray-700 dark:text-gray-200 text-base placeholder:text-gray-400 dark:placeholder:text-gray-500 min-h-[100px]"
                     readOnly={isRecording}
                 />
+
+                {/* Voice Recording Waveform - RESTORED */}
+                {isRecording && (
+                    <div className="absolute bottom-2 left-3 right-3 h-8 flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-lg px-3">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        <div className="flex items-center gap-0.5 h-full">
+                            {[...Array(7)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="w-1 bg-red-500 rounded-full animate-pulse"
+                                    style={{
+                                        height: `${20 + (i % 3) * 15}px`,
+                                        animationDelay: `${i * 0.1}s`,
+                                    }}
+                                />
+                            ))}
+                        </div>
+                        <span className="text-xs font-semibold text-red-600 dark:text-red-400 ml-2">Recording...</span>
+                    </div>
+                )}
+
+                {/* Polishing Indicator */}
+                {isPolishing && (
+                    <div className="absolute bottom-2 left-3 right-3 h-8 flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg px-3">
+                        <Sparkles size={14} className="text-purple-500 animate-pulse" />
+                        <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">Polishing with AI...</span>
+                    </div>
+                )}
             </div>
 
-            {/* Actions Row - Indicators at same level as buttons */}
-            <div className="flex items-center justify-between mt-3 px-1">
-                {/* Left side: Status indicators */}
-                <div className="flex items-center gap-2">
-                    {isRecording && (
-                        <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-full px-3 py-1.5">
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                            <span className="text-xs font-semibold text-red-600 dark:text-red-400">Recording</span>
-                        </div>
-                    )}
-                    {isPolishing && (
-                        <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 rounded-full px-3 py-1.5">
-                            <Sparkles size={12} className="text-purple-500 animate-pulse" />
-                            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">Polishing...</span>
-                        </div>
-                    )}
-                </div>
+            {/* Actions */}
+            <div className="flex items-center justify-end mt-3 px-1 gap-2">
+                <button
+                    onClick={toggleRecording}
+                    className={`p-3 rounded-full transition-all ${isRecording
+                        ? 'bg-red-500 dark:bg-red-600 text-white'
+                        : 'bg-gray-50 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-neutral-700'
+                        }`}
+                >
+                    {isRecording ? <Square size={20} fill="currentColor" /> : <Mic size={20} />}
+                </button>
 
-                {/* Right side: Buttons */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={toggleRecording}
-                        className={`p-3 rounded-full transition-all ${isRecording
-                            ? 'bg-red-500 dark:bg-red-600 text-white'
-                            : 'bg-gray-50 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-neutral-700'
-                            }`}
-                    >
-                        {isRecording ? <Square size={20} fill="currentColor" /> : <Mic size={20} />}
-                    </button>
-
-                    <button
-                        onClick={handleSend}
-                        disabled={!text.trim() || isPolishing}
-                        className={`p-3 rounded-full transition-all flex items-center space-x-2 ${text.trim() && !isPolishing
-                            ? (type === 'dream' ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-600' : 'bg-orange-500 dark:bg-orange-600 text-white shadow-md hover:bg-orange-600 dark:hover:bg-orange-500')
-                            : 'bg-gray-100 dark:bg-neutral-800 text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            }`}
-                    >
-                        <Send size={20} />
-                    </button>
-                </div>
+                <button
+                    onClick={handleSend}
+                    disabled={!text.trim() || isPolishing}
+                    className={`p-3 rounded-full transition-all flex items-center space-x-2 ${text.trim() && !isPolishing
+                        ? (type === 'dream' ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-600' : 'bg-orange-500 dark:bg-orange-600 text-white shadow-md hover:bg-orange-600 dark:hover:bg-orange-500')
+                        : 'bg-gray-100 dark:bg-neutral-800 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                        }`}
+                >
+                    <Send size={20} />
+                </button>
             </div>
         </div>
     );
