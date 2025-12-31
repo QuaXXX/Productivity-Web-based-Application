@@ -101,7 +101,7 @@ const StatsSection = ({ history, streak, currentCompletionRate, chartStyle, bigG
 
     return (
         <div className="space-y-6 w-full mb-8">
-            <h2 className="text-2xl font-bold px-4 pt-4 text-[var(--color-text-primary)]">Your Stats</h2>
+
 
             {/* Stats Widget Cards (Swipeable) */}
             <StatsWidgetCards

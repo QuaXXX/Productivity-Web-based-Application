@@ -1100,7 +1100,7 @@ function App() {
                 {/* Content Area - Swipeable */}
 
                 <section
-                    className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-6 pb-40"
+                    className={`flex-1 overflow-y-auto pr-2 -mr-2 space-y-6 ${activeTab === 'focus' ? 'pb-0' : 'pb-24'}`}
                     onTouchStart={onTouchStart}
                     onTouchMove={onTouchMove}
                     onTouchEnd={onTouchEnd}
@@ -1119,7 +1119,7 @@ function App() {
                             animate="center"
                             exit="exit"
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="h-full w-full"
+                            className={`w-full ${activeTab === 'focus' ? 'h-full' : 'min-h-full'}`}
                         >
                             {activeTab === 'profile' ? (
                                 <StatsSection
