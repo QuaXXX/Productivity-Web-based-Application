@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Mic, Send, X } from 'lucide-react';
+import { Sun, Moon, Mic, Send, X, Sparkles } from 'lucide-react';
+import { polishTranscript } from '../services/geminiService';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -9,6 +10,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
     const [text, setText] = useState('');
     const [mood, setMood] = useState(null); // 'great' | 'good' | 'neutral' | 'meh' | 'sad' | null
     const [isRecording, setIsRecording] = useState(false);
+    const [isPolishing, setIsPolishing] = useState(false);
 
     // Voice Recognition Refs
     const recognitionRef = useRef(null);
@@ -83,7 +85,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         }
     }, []);
 
-    const toggleRecording = () => {
+    const toggleRecording = async () => {
         if (playSound) playSound('click');
 
         if (!recognitionRef.current) {
@@ -99,6 +101,22 @@ export default function JournalComposer({ onAddEntry, playSound }) {
             if (isRecording) {
                 shouldStopRef.current = true;
                 recognitionRef.current.stop();
+
+                // Trigger AI polishing after a brief delay to ensure final transcript is captured
+                setTimeout(async () => {
+                    const currentText = document.querySelector('textarea')?.value || '';
+                    if (currentText.trim()) {
+                        setIsPolishing(true);
+                        try {
+                            const polished = await polishTranscript(currentText);
+                            setText(polished);
+                        } catch (e) {
+                            console.error("Polish error:", e);
+                        } finally {
+                            setIsPolishing(false);
+                        }
+                    }
+                }, 300);
             } else {
                 shouldStopRef.current = false;
                 recognitionRef.current.start();
@@ -213,6 +231,14 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                             ))}
                         </div>
                         <span className="text-xs font-semibold text-red-600 dark:text-red-400 ml-2">Recording...</span>
+                    </div>
+                )}
+
+                {/* Polishing Indicator */}
+                {isPolishing && (
+                    <div className="absolute bottom-2 left-4 right-14 h-8 flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg px-3">
+                        <Sparkles size={14} className="text-purple-500 animate-pulse" />
+                        <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">Polishing...</span>
                     </div>
                 )}
             </div>

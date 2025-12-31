@@ -181,3 +181,50 @@ export async function analyzeEntry(text) {
         return { found: false, error: "Analysis Failed" };
     }
 }
+
+/**
+ * Polishes a raw voice transcript using Gemini Flash.
+ * Fixes punctuation, adds question marks, removes filler words.
+ * 
+ * @param {string} rawText - The raw voice transcript.
+ * @returns {Promise<string>} - The polished transcript text.
+ */
+export async function polishTranscript(rawText) {
+    if (!rawText || !rawText.trim()) {
+        return rawText;
+    }
+
+    if (!API_KEY || !genAI) {
+        console.log("No API key, returning raw transcript.");
+        return rawText;
+    }
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = `
+You are a transcript editor. Clean up this raw voice transcript:
+1. Fix punctuation and capitalization.
+2. Add question marks where appropriate.
+3. Remove filler words like "um", "uh", "like", "you know", and unnecessary repetitions.
+4. Keep the speaker's original meaning and natural tone intact.
+5. Do NOT add any commentary or explanations.
+6. Return ONLY the cleaned text.
+
+Raw transcript:
+"${rawText}"
+        `.trim();
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const polishedText = response.text().trim();
+
+        // Remove any potential quotes around the response
+        return polishedText.replace(/^["']|["']$/g, '');
+
+    } catch (error) {
+        console.error("Gemini Polish Error:", error);
+        return rawText; // Fallback to raw text on error
+    }
+}
+
