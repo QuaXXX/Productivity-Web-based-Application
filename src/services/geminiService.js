@@ -203,16 +203,22 @@ export async function polishTranscript(rawText) {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
-You are a transcript editor. Clean up this raw voice transcript:
-1. Fix punctuation and capitalization.
-2. Add question marks where appropriate.
-3. Remove filler words like "um", "uh", "like", "you know", and unnecessary repetitions.
-4. Keep the speaker's original meaning and natural tone intact.
-5. Do NOT add any commentary or explanations.
-6. Return ONLY the cleaned text.
+You are a professional transcript editor. Your job is to transform raw voice-to-text into polished, readable text.
+
+CRITICAL INSTRUCTIONS:
+1. ADD PROPER PUNCTUATION: periods at the end of sentences, commas where natural pauses occur, question marks for questions, exclamation points for emphasis.
+2. CAPITALIZE correctly: first letter of sentences and proper nouns.
+3. REMOVE filler words: "um", "uh", "like", "you know", "basically", "actually" (when used as filler), unnecessary repetitions.
+4. BREAK into clear sentences. Voice transcripts often run on - split them into readable sentences.
+5. PRESERVE the speaker's meaning and intent. Don't change what they're saying, just how it's formatted.
+6. Return ONLY the polished text. No quotes, no explanations, no commentary.
+
+Example:
+Input: "um so i was thinking like maybe we should go to the store you know and get some groceries because we dont have any food"
+Output: "I was thinking maybe we should go to the store and get some groceries because we don't have any food."
 
 Raw transcript:
-"${rawText}"
+${rawText}
         `.trim();
 
         const result = await model.generateContent(prompt);

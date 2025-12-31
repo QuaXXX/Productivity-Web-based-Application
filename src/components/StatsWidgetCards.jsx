@@ -77,7 +77,8 @@ const StatsWidgetCards = ({ streak = 0, completionRate = 0, weeklyAvg = 0, total
                     return (
                         <div
                             key={i}
-                            className="min-w-full snap-center px-1" // Add padding to separate slightly or use gap
+                            className="min-w-full snap-center px-1"
+                            style={{ scrollSnapStop: 'always' }} // Prevent overshooting
                         >
                             <div
                                 className="p-6 rounded-2xl border border-[var(--color-border-light)]"

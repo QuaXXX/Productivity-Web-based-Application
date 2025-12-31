@@ -1086,14 +1086,14 @@ function App() {
                             key={activeTab}
                             custom={slideDirection}
                             variants={{
-                                enter: (direction) => ({ x: direction > 0 ? 300 : -300, opacity: 0 }),
+                                enter: (direction) => ({ x: direction > 0 ? '100%' : '-100%', opacity: 0.5 }),
                                 center: { x: 0, opacity: 1 },
-                                exit: (direction) => ({ x: direction < 0 ? 300 : -300, opacity: 0 })
+                                exit: (direction) => ({ x: direction < 0 ? '50%' : '-50%', opacity: 0 })
                             }}
                             initial="enter"
                             animate="center"
                             exit="exit"
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            transition={{ type: "tween", ease: "easeOut", duration: 0.25 }}
                             className={`w-full ${activeTab === 'focus' ? 'h-full' : 'min-h-full'}`}
                         >
                             {activeTab === 'profile' ? (
