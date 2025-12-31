@@ -9,7 +9,7 @@ import FocusView from './views/FocusView';
 import StatsSection from './components/StatsSection';
 import CelebrationOverlay from './components/CelebrationOverlay';
 import useSoundEffects from './hooks/useSoundEffects';
-import { analyzeEntry } from './services/geminiService';
+
 
 import StatsSettings from './components/StatsSettings';
 import FloatingActionButton from './components/FloatingActionButton';
@@ -765,30 +765,8 @@ function App() {
         try {
             // 1. Optimistic Add
             setJournalEntries(prev => [newEntry, ...prev]);
-
-            // 2. AI Analysis (if enabled)
-            if (newEntry.enableAI) {
-                console.log("Starting AI Analysis for:", newEntry.content);
-                // Ensure analyzeEntry is available
-                if (typeof analyzeEntry === 'function') {
-                    const analysis = await analyzeEntry(newEntry.content);
-
-                    if (analysis && analysis.found) {
-                        // Update the entry with analysis result
-                        setJournalEntries(prev => prev.map(e =>
-                            e.id === newEntry.id
-                                ? { ...e, aiAnalysis: analysis }
-                                : e
-                        ));
-                        playTier1();
-                    }
-                } else {
-                    console.warn("analyzeEntry function not found.");
-                }
-            }
         } catch (error) {
             console.error("Critical Error adding journal entry:", error);
-            // Optionally revert check? No, optimistic add is fine, just log error.
         }
     };
 
@@ -803,20 +781,7 @@ function App() {
         });
     };
 
-    const handleCreateFromAnalysis = (category, title, extraData = {}) => {
-        if (category === 'Habit') {
-            handleAddHabit({ title, icon: '✨' }); // Use sparkle icon for AI-generated
-        } else {
-            // For Big Goals, open the modal with pre-filled data
-            setGoalModalInitialData({
-                title: title,
-                description: extraData.description || '',
-                dueDate: extraData.dueDate || format(new Date(), 'yyyy-MM-dd'),
-                subSteps: extraData.subSteps || []
-            });
-            setIsGoalModalOpen(true);
-        }
-    };
+
 
     // --- Computed ---
     // --- Computed ---
@@ -1122,7 +1087,7 @@ function App() {
                                     entries={journalEntries}
                                     onAddEntry={handleAddJournalEntry}
                                     onUpdateEntry={handleUpdateJournalEntry}
-                                    onCreateGoal={handleCreateFromAnalysis}
+
                                     playSound={playSound}
                                     dismissedSuggestions={dismissedSuggestions}
                                     onDismissSuggestion={handleDismissSuggestion}

@@ -200,26 +200,23 @@ export async function polishTranscript(rawText) {
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
         const prompt = `
-You are a professional transcript editor. Your job is to transform raw voice-to-text into polished, readable text.
+Transform this raw voice transcript into clean, polished text.
 
-CRITICAL INSTRUCTIONS:
-1. ADD PROPER PUNCTUATION: periods at the end of sentences, commas where natural pauses occur, question marks for questions, exclamation points for emphasis.
-2. CAPITALIZE correctly: first letter of sentences and proper nouns.
-3. REMOVE filler words: "um", "uh", "like", "you know", "basically", "actually" (when used as filler), unnecessary repetitions.
-4. BREAK into clear sentences. Voice transcripts often run on - split them into readable sentences.
-5. PRESERVE the speaker's meaning and intent. Don't change what they're saying, just how it's formatted.
-6. Return ONLY the polished text. No quotes, no explanations, no commentary.
+RULES (follow STRICTLY):
+1. ADD a period at the END of every sentence. Every sentence MUST end with . or ? or !
+2. ADD commas where natural pauses occur.
+3. CAPITALIZE the first letter of every sentence.
+4. REMOVE filler words: um, uh, like, you know, basically, so, actually.
+5. REMOVE stutters and repeated words.
+6. Keep the meaning exactly the same.
+7. Return ONLY the cleaned text. No quotes. No explanation.
 
-Example:
-Input: "um so i was thinking like maybe we should go to the store you know and get some groceries because we dont have any food"
-Output: "I was thinking maybe we should go to the store and get some groceries because we don't have any food."
+Input: ${rawText}
 
-Raw transcript:
-${rawText}
-        `.trim();
+Output:`.trim();
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
