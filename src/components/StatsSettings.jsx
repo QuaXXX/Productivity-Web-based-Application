@@ -121,7 +121,15 @@ const StatsSettings = ({ isOpen, onClose, chartStyle, onSetChartStyle, bigGoals 
                             </button>
                         </div>
 
-                        <div className="pt-2">
+                        <div className="pt-4 flex flex-col gap-3">
+                            <button
+                                onClick={onFreshStart}
+                                className="w-full py-3 bg-red-50 text-red-600 font-medium rounded-xl hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Trash2 size={18} />
+                                Reset Data
+                            </button>
+
                             <button
                                 onClick={onClose}
                                 className="w-full py-3 bg-[var(--color-primary)] text-white font-semibold rounded-xl hover:bg-[var(--color-primary-dark)] shadow-md transition-all"

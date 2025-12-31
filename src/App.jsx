@@ -23,11 +23,7 @@ import { Plus, BarChart2, Repeat, Settings, X, Mountain, Flag, RefreshCw, Calend
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isSameDay, parseISO, startOfToday, subDays, differenceInCalendarDays, addDays } from 'date-fns';
 // --- Constants ---
-const DEFAULT_HABITS = [
-    { id: 'h1', title: 'Drink 2L Water', icon: '💧', streak: 0, isCompleted: false, lastCompletedDate: null },
-    { id: 'h2', title: 'Read 30 Mins', icon: '📖', streak: 0, isCompleted: false, lastCompletedDate: null },
-    { id: 'h3', title: 'Workout', icon: '💪', streak: 0, isCompleted: false, lastCompletedDate: null },
-];
+const DEFAULT_HABITS = [];
 
 // --- Persistence (Debounced) ---
 function useDebounce(value, delay) {
@@ -114,22 +110,7 @@ function App() {
     // 2. Big Goals (Persistent, Project-based)
     const [bigGoals, setBigGoals] = useState(() => {
         const saved = localStorage.getItem('productivity_big_goals');
-        return saved ? JSON.parse(saved) : [
-            {
-                id: 'bg1',
-                title: 'Launch MVP',
-                description: 'Build and ship the first version.',
-                startDate: '2025-01-01', // Backdated for demo
-                dueDate: '2025-12-31',
-                theme: 'blue',
-                subSteps: [
-                    { id: 's1', title: 'Design UI', isCompleted: true },
-                    { id: 's2', title: 'Implement State', isCompleted: false },
-                    { id: 's3', title: 'Deploy', isCompleted: false },
-                ],
-                progress: 0
-            }
-        ];
+        return saved ? JSON.parse(saved) : [];
     });
 
     // --- Mock Data Helper ---
@@ -171,16 +152,9 @@ function App() {
     const [history, setHistory] = useState(() => {
         const saved = localStorage.getItem('productivity_history');
         if (saved) {
-            const parsed = JSON.parse(saved);
-            // If history is very short (likely just started testing), overwrite with mock for demo
-            if (parsed.length > 2) return parsed;
+            return JSON.parse(saved);
         }
-
-        // Return mock data for demo if empty or short
-        const mock = generateMockHistory();
-        // Save it so it persists for this session/demo
-        localStorage.setItem('productivity_history', JSON.stringify(mock));
-        return mock;
+        return [];
     });
 
     // 4. Streak Calculation Logic
