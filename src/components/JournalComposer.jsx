@@ -1,36 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Mic, Send, X, Sparkles } from 'lucide-react';
+import { Sun, Moon, Mic, Send, Square, Sparkles } from 'lucide-react';
 import { polishTranscript } from '../services/geminiService';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 export default function JournalComposer({ onAddEntry, playSound }) {
-    const [enableAI, setEnableAI] = useState(true); // Always On
-    const [type, setType] = useState('daily'); // 'daily' | 'dream'
+    const [type, setType] = useState('daily');
     const [text, setText] = useState('');
-    const [mood, setMood] = useState(null); // 'great' | 'good' | 'neutral' | 'meh' | 'sad' | null
+    const [interimText, setInterimText] = useState('');
+    const [mood, setMood] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
     const [isPolishing, setIsPolishing] = useState(false);
 
-    // Voice Recognition Refs
     const recognitionRef = useRef(null);
     const shouldStopRef = useRef(false);
+    const textRef = useRef(text);
 
-    // ... [UseEffect for Speech skipped for brevity in replacement, assuming partial update logic]
-    // Wait, I need to match the StartLine/EndLine or replace the whole file. 
-    // I will use replace_file_content carefully.
+    // Keep textRef in sync
+    useEffect(() => {
+        textRef.current = text;
+    }, [text]);
 
-    // I need to see the line numbers again. 
-    // The previous view_file output showed Lines 6 to 191.
-    // I will replace from Line 6.
-
-    // ... Keeping Speech Init ...
     useEffect(() => {
         if (typeof window !== 'undefined' && SpeechRecognition) {
             try {
                 const recognition = new SpeechRecognition();
                 recognition.continuous = true;
-                recognition.interimResults = false;
+                recognition.interimResults = true; // ENABLE real-time updates
                 recognition.maxAlternatives = 1;
                 recognition.lang = 'en-US';
 
@@ -41,11 +37,10 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
                 recognition.onend = () => {
                     console.log('Voice recognition ended');
-                    // Only stop state if explicitly requested
+                    setInterimText('');
                     if (shouldStopRef.current) {
                         setIsRecording(false);
                     } else {
-                        // Otherwise restart (handle silence timeout)
                         console.log('Restarting voice recognition...');
                         try {
                             recognition.start();
@@ -61,15 +56,21 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                     let finalTranscript = '';
 
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const transcript = event.results[i][0].transcript;
                         if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript;
+                            finalTranscript += transcript;
                         } else {
-                            interimTranscript += event.results[i][0].transcript;
+                            interimTranscript += transcript;
                         }
                     }
 
+                    // Show interim text in real-time
+                    setInterimText(interimTranscript);
+
+                    // Append final text
                     if (finalTranscript) {
                         setText(prev => prev + (prev ? ' ' : '') + finalTranscript);
+                        setInterimText('');
                     }
                 };
 
@@ -90,7 +91,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
         if (!recognitionRef.current) {
             if (SpeechRecognition) {
-                alert("Voice recognition not initialized. Please refresh or check browser compatibility.");
+                alert("Voice recognition not initialized. Please refresh.");
             } else {
                 alert("Voice recognition not supported in this browser.");
             }
@@ -99,25 +100,28 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
         try {
             if (isRecording) {
+                // STOP recording
                 shouldStopRef.current = true;
                 recognitionRef.current.stop();
+                setInterimText('');
 
-                // Trigger AI polishing after a brief delay to ensure final transcript is captured
-                setTimeout(async () => {
-                    const currentText = document.querySelector('textarea')?.value || '';
-                    if (currentText.trim()) {
-                        setIsPolishing(true);
-                        try {
-                            const polished = await polishTranscript(currentText);
+                // Trigger AI polish with current state
+                const currentText = textRef.current;
+                if (currentText && currentText.trim()) {
+                    setIsPolishing(true);
+                    try {
+                        const polished = await polishTranscript(currentText);
+                        if (polished && polished.trim()) {
                             setText(polished);
-                        } catch (e) {
-                            console.error("Polish error:", e);
-                        } finally {
-                            setIsPolishing(false);
                         }
+                    } catch (e) {
+                        console.error("Polish error:", e);
+                    } finally {
+                        setIsPolishing(false);
                     }
-                }, 300);
+                }
             } else {
+                // START recording
                 shouldStopRef.current = false;
                 recognitionRef.current.start();
             }
@@ -139,7 +143,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
             mood,
             audioUrl: null,
             tags: [],
-            enableAI: true // Always On
+            enableAI: true
         };
 
         if (onAddEntry) onAddEntry(newEntry);
@@ -151,6 +155,9 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         if (playSound) playSound('click');
         setType(newType);
     }
+
+    // Combined display text (final + interim in gray)
+    const displayText = text + (interimText ? (text ? ' ' : '') + interimText : '');
 
     return (
         <div className="bg-[var(--color-surface)] rounded-3xl p-4 shadow-[var(--shadow-card)] border border-[var(--color-border-light)] transition-colors duration-500">
@@ -180,92 +187,62 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 </div>
             </div>
 
-            {/* Mood Selector (Hidden for later) */}
-            {false && (
-                <div className="flex items-center justify-center gap-2 mb-4">
-                    <span className="text-xs font-medium text-[var(--color-text-tertiary)] mr-2">Mood:</span>
-                    {[
-                        { id: 'sad', emoji: '😢' },
-                        { id: 'meh', emoji: '😕' },
-                        { id: 'neutral', emoji: '😐' },
-                        { id: 'good', emoji: '🙂' },
-                        { id: 'great', emoji: '😁' },
-                    ].map(m => (
-                        <button
-                            key={m.id}
-                            onClick={() => { setMood(mood === m.id ? null : m.id); if (playSound) playSound('click'); }}
-                            className={`text-2xl p-1.5 rounded-full transition-all ${mood === m.id
-                                ? 'scale-125 bg-[var(--color-primary)]/20 ring-2 ring-[var(--color-primary)]'
-                                : 'hover:scale-110 opacity-60 hover:opacity-100'
-                                }`}
-                        >
-                            {m.emoji}
-                        </button>
-                    ))}
-                </div>
-            )}
-
             {/* Input Area */}
             <div className={`relative rounded-2xl p-3 min-h-[120px] transition-colors ${type === 'dream' ? 'bg-indigo-50/50 dark:bg-indigo-900/20' : 'bg-gray-50 dark:bg-neutral-800'}`}>
                 <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    value={displayText}
+                    onChange={(e) => {
+                        if (!isRecording) {
+                            setText(e.target.value);
+                        }
+                    }}
                     placeholder={type === 'dream' ? "What did you dream about?..." : "What's on your mind today?..."}
                     className="w-full h-full bg-transparent resize-none outline-none text-gray-700 dark:text-gray-200 text-base placeholder:text-gray-400 dark:placeholder:text-gray-500 min-h-[100px]"
+                    readOnly={isRecording}
                 />
-
-                {/* Voice Recording Waveform */}
-                {isRecording && (
-                    <div className="absolute bottom-2 left-4 right-14 h-8 flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-lg px-3">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                        <div className="flex items-center gap-0.5 h-full">
-                            {[...Array(7)].map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="w-1 bg-red-500 rounded-full animate-waveform"
-                                    style={{
-                                        height: `${Math.random() * 60 + 40}%`,
-                                        animationDelay: `${i * 0.1}s`,
-                                    }}
-                                />
-                            ))}
-                        </div>
-                        <span className="text-xs font-semibold text-red-600 dark:text-red-400 ml-2">Recording...</span>
-                    </div>
-                )}
-
-                {/* Polishing Indicator */}
-                {isPolishing && (
-                    <div className="absolute bottom-2 left-4 right-14 h-8 flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg px-3">
-                        <Sparkles size={14} className="text-purple-500 animate-pulse" />
-                        <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">Polishing...</span>
-                    </div>
-                )}
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end mt-3 px-1 gap-2">
+            {/* Actions Row - Indicators at same level as buttons */}
+            <div className="flex items-center justify-between mt-3 px-1">
+                {/* Left side: Status indicators */}
+                <div className="flex items-center gap-2">
+                    {isRecording && (
+                        <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-full px-3 py-1.5">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-xs font-semibold text-red-600 dark:text-red-400">Recording</span>
+                        </div>
+                    )}
+                    {isPolishing && (
+                        <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 rounded-full px-3 py-1.5">
+                            <Sparkles size={12} className="text-purple-500 animate-pulse" />
+                            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">Polishing...</span>
+                        </div>
+                    )}
+                </div>
 
-                <button
-                    onClick={toggleRecording}
-                    className={`p-3 rounded-full transition-all ${isRecording
-                        ? 'bg-red-100 dark:bg-red-900/30 text-red-600 animate-pulse'
-                        : 'bg-gray-50 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-neutral-700'
-                        }`}
-                >
-                    <Mic size={20} />
-                </button>
+                {/* Right side: Buttons */}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={toggleRecording}
+                        className={`p-3 rounded-full transition-all ${isRecording
+                            ? 'bg-red-500 dark:bg-red-600 text-white'
+                            : 'bg-gray-50 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-neutral-700'
+                            }`}
+                    >
+                        {isRecording ? <Square size={20} fill="currentColor" /> : <Mic size={20} />}
+                    </button>
 
-                <button
-                    onClick={handleSend}
-                    disabled={!text.trim()}
-                    className={`p-3 rounded-full transition-all flex items-center space-x-2 ${text.trim()
-                        ? (type === 'dream' ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-600' : 'bg-orange-500 dark:bg-orange-600 text-white shadow-md hover:bg-orange-600 dark:hover:bg-orange-500')
-                        : 'bg-gray-100 dark:bg-neutral-800 text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                        }`}
-                >
-                    <Send size={20} />
-                </button>
+                    <button
+                        onClick={handleSend}
+                        disabled={!text.trim() || isPolishing}
+                        className={`p-3 rounded-full transition-all flex items-center space-x-2 ${text.trim() && !isPolishing
+                            ? (type === 'dream' ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-600' : 'bg-orange-500 dark:bg-orange-600 text-white shadow-md hover:bg-orange-600 dark:hover:bg-orange-500')
+                            : 'bg-gray-100 dark:bg-neutral-800 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                            }`}
+                    >
+                        <Send size={20} />
+                    </button>
+                </div>
             </div>
         </div>
     );
