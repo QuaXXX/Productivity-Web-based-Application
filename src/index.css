@@ -1,0 +1,298 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+
+    /* ========================================
+       UNIFIED COLOR PALETTE - LIGHT MODE
+       ======================================== */
+    :root {
+        /* Backgrounds */
+        --color-bg-primary: #FAFAFA;
+        --color-bg-secondary: #F5F5F5;
+        --color-surface: #FFFFFF;
+        --color-surface-elevated: #FFFFFF;
+
+        /* Text */
+        --color-text-primary: #1F2937;
+        --color-text-secondary: #6B7280;
+        --color-text-tertiary: #9CA3AF;
+        --color-text-muted: #D1D5DB;
+
+        /* Borders */
+        --color-border-default: #E5E7EB;
+        --color-border-light: #F3F4F6;
+        --color-border-focus: #3B82F6;
+
+        /* Primary (Blue) */
+        --color-primary: #2563EB;
+        --color-primary-light: #DBEAFE;
+        --color-primary-dark: #1D4ED8;
+        --color-primary-glow: rgba(37, 99, 235, 0.15);
+
+        /* Success (Emerald) */
+        --color-success: #10B981;
+        --color-success-light: #D1FAE5;
+        --color-success-dark: #059669;
+        --color-success-glow: rgba(16, 185, 129, 0.2);
+
+        /* Warning (Amber/Orange) */
+        --color-warning: #F59E0B;
+        --color-warning-light: #FEF3C7;
+        --color-warning-dark: #D97706;
+
+        /* Error (Red) */
+        --color-error: #EF4444;
+        --color-error-light: #FEE2E2;
+        --color-error-dark: #DC2626;
+
+        /* Accent (Purple) */
+        --color-accent: #8B5CF6;
+        --color-accent-light: #EDE9FE;
+        --color-accent-dark: #7C3AED;
+
+        /* Dream/Indigo */
+        --color-dream: #6366F1;
+        --color-dream-light: #E0E7FF;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+        --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+        /* Apply base styles */
+        @apply bg-[var(--color-bg-primary)] text-[var(--color-text-primary)];
+    }
+
+    /* ========================================
+       UNIFIED COLOR PALETTE - DARK MODE
+       ======================================== */
+    .dark {
+        /* Backgrounds */
+        --color-bg-primary: #0A0A0A;
+        --color-bg-secondary: #0F0F0F;
+        --color-surface: #171717;
+        --color-surface-elevated: #1F1F1F;
+
+        /* Text */
+        --color-text-primary: #F9FAFB;
+        --color-text-secondary: #9CA3AF;
+        --color-text-tertiary: #6B7280;
+        --color-text-muted: #4B5563;
+
+        /* Borders */
+        --color-border-default: #262626;
+        --color-border-light: #1F1F1F;
+        --color-border-focus: #60A5FA;
+
+        /* Primary (Blue) - Slightly lighter for dark mode */
+        --color-primary: #3B82F6;
+        --color-primary-light: rgba(59, 130, 246, 0.15);
+        --color-primary-dark: #2563EB;
+        --color-primary-glow: rgba(59, 130, 246, 0.25);
+
+        /* Success (Emerald) */
+        --color-success: #34D399;
+        --color-success-light: rgba(52, 211, 153, 0.15);
+        --color-success-dark: #10B981;
+        --color-success-glow: rgba(52, 211, 153, 0.25);
+
+        /* Warning (Amber/Orange) */
+        --color-warning: #FBBF24;
+        --color-warning-light: rgba(251, 191, 36, 0.15);
+        --color-warning-dark: #F59E0B;
+
+        /* Error (Red) */
+        --color-error: #F87171;
+        --color-error-light: rgba(248, 113, 113, 0.15);
+        --color-error-dark: #EF4444;
+
+        /* Accent (Purple) */
+        --color-accent: #A78BFA;
+        --color-accent-light: rgba(167, 139, 250, 0.15);
+        --color-accent-dark: #8B5CF6;
+
+        /* Dream/Indigo */
+        --color-dream: #818CF8;
+        --color-dream-light: rgba(129, 140, 248, 0.15);
+
+        /* Shadows - More prominent in dark mode */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Recharts Focus Outline Fix - Aggressive */
+    .recharts-wrapper,
+    .recharts-surface,
+    .recharts-layer,
+    .recharts-cartesian-grid-vertical,
+    .recharts-cartesian-grid-horizontal,
+    .recharts-tooltip-cursor,
+    *:focus,
+    *:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .recharts-wrapper *:focus {
+        outline: none !important;
+    }
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+/* Shake Animation for Delete Mode */
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-3deg);
+    }
+
+    75% {
+        transform: rotate(3deg);
+    }
+}
+
+.animate-shake {
+    animation: shake 0.3s ease-in-out infinite;
+}
+
+/* Pulse Animation for Uncompleted Habits */
+@keyframes pulse-subtle {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.02);
+        opacity: 0.95;
+    }
+}
+
+.animate-pulse-subtle {
+    animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Fire Flicker Animation for Streak */
+@keyframes fire-flicker {
+
+    0%,
+    100% {
+        transform: scale(1) rotate(0deg);
+        filter: brightness(1);
+    }
+
+    25% {
+        transform: scale(1.05) rotate(-2deg);
+        filter: brightness(1.1);
+    }
+
+    50% {
+        transform: scale(1.1) rotate(1deg);
+        filter: brightness(1.2);
+    }
+
+    75% {
+        transform: scale(1.05) rotate(-1deg);
+        filter: brightness(1.1);
+    }
+}
+
+.animate-fire {
+    animation: fire-flicker 0.8s ease-in-out infinite;
+}
+
+/* Card Hover Lift Effect */
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.dark .card-hover:hover {
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(59, 130, 246, 0.1);
+}
+
+/* Progress Ring Fill Animation */
+@keyframes ring-fill {
+    from {
+        stroke-dashoffset: 100;
+    }
+
+    to {
+        stroke-dashoffset: var(--progress-offset, 0);
+    }
+}
+
+.animate-ring-fill {
+    animation: ring-fill 0.8s ease-out forwards;
+}
+
+/* Glassmorphism Enhancement */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.dark .glass {
+    background: rgba(18, 18, 18, 0.8);
+}
+
+/* Nav Shadow Gradient */
+.nav-shadow {
+    box-shadow: 0 -8px 30px -5px rgba(0, 0, 0, 0.08);
+}
+
+.dark .nav-shadow {
+    box-shadow: 0 -8px 30px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(59, 130, 246, 0.05);
+}
+
+/* Skeleton Loading Animation */
+@keyframes skeleton-pulse {
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+    background-size: 200% 100%;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton {
+    background: linear-gradient(90deg, #262626 25%, #3f3f46 50%, #262626 75%);
+}
