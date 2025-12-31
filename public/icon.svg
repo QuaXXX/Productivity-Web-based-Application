@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9333ea;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Background: Dark Circle -->
+  <circle cx="256" cy="256" r="240" fill="#0f0f11" />
+  
+  <!-- Subtle Ring -->
+  <circle cx="256" cy="256" r="230" fill="none" stroke="#27272a" stroke-width="10" />
+  
+  <!-- Content: Checkmark / Abstract Flow -->
+  <path d="M150 280 L220 350 L362 162" 
+        fill="none" 
+        stroke="url(#grad1)" 
+        stroke-width="50" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+        filter="url(#glow)" />
+        
+  <!-- Optional: Small dot for 'focus' aspect -->
+  <circle cx="360" cy="160" r="10" fill="#a855f7" />
+</svg>

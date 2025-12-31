@@ -45,16 +45,11 @@ function App() {
     const [theme, setTheme] = useTheme();
 
     // 1. Session Persistence (Tab & View)
+    // 1. Session Persistence (Tab)
     const [activeTab, setActiveTabState] = useState(() => localStorage.getItem('productivity_active_tab') || 'focus');
     const setActiveTab = (tab) => {
         setActiveTabState(tab);
         localStorage.setItem('productivity_active_tab', tab);
-    };
-
-    const [viewMode, setViewModeState] = useState(() => localStorage.getItem('productivity_view_mode') || 'focus');
-    const setViewMode = (mode) => {
-        setViewModeState(mode);
-        localStorage.setItem('productivity_view_mode', mode);
     };
 
     const [viewingDate, setViewingDate] = useState('Today');
@@ -332,9 +327,7 @@ function App() {
         localStorage.setItem('productivity_journal_entries', JSON.stringify(debouncedJournalEntries));
     }, [debouncedJournalEntries]);
 
-    useEffect(() => {
-        localStorage.setItem('productivity_view_mode', viewMode);
-    }, [viewMode]);
+
 
 
 
@@ -1064,37 +1057,7 @@ function App() {
                         </div>
                     </div>
 
-                    {/* Segmented View Mode Tabs (Focus tab only) */}
-                    {activeTab === 'focus' && !isHeaderCollapsed && (
-                        <div className="flex bg-[var(--color-bg-secondary)] p-1 rounded-xl relative">
-                            {/* Sliding Indicator */}
-                            <motion.div
-                                layoutId="viewModeIndicator"
-                                className="absolute inset-y-1 bg-[var(--color-surface)] rounded-lg shadow-sm"
-                                style={{ width: 'calc(50% - 4px)' }}
-                                animate={{
-                                    left: viewMode === 'focus' ? '4px' : 'calc(50% + 2px)'
-                                }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                            />
-
-                            {[
-                                { id: 'focus', label: 'Feed' },
-                                { id: 'list', label: 'List' },
-                            ].map((mode) => (
-                                <button
-                                    key={mode.id}
-                                    onClick={() => setViewMode(mode.id)}
-                                    className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${viewMode === mode.id
-                                        ? 'text-[var(--color-text-primary)]'
-                                        : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
-                                        }`}
-                                >
-                                    {mode.label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    {/* Segmented View Mode Tabs Removed - Feed Only */}
                 </header>
 
                 {/* Content Area - Swipeable */}
@@ -1155,7 +1118,6 @@ function App() {
                             ) : (
                                 // FOCUS VIEW (Dashboard)
                                 <FocusView
-                                    viewMode={viewMode}
                                     visibleHabits={visibleHabits}
                                     sortedBigGoals={sortedBigGoals}
                                     bigGoals={bigGoals}
