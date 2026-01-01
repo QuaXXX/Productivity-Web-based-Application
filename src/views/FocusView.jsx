@@ -1,31 +1,25 @@
 
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Mountain, Flag, RefreshCw, Minus, Trash2, ChevronDown } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import HabitCircle from '../components/HabitCircle';
-import HabitRow from '../components/HabitRow';
 import BigGoalCard from '../components/BigGoalCard';
 import EmptyState from '../components/EmptyState';
 
 const FocusView = ({
     visibleHabits,
     sortedBigGoals,
-    bigGoals, // Needed for Command/List views where filtering might differ? Or strictly sorted? App uses sortedBigGoals for Focus, bigGoals for List/Command.
     isReadOnly,
     onToggleHabit,
-    onAddHabit,
     onAddBigGoalStep,
     onToggleBigGoalStep,
     onDeleteBigGoalStep,
     onDeleteBigGoal,
     onOpenHabitModal,
     onOpenGoalModal,
-    onEditHabit,
     onDeleteHabit
 }) => {
-    const [isFabOpen, setIsFabOpen] = useState(false);
-    const [isDeleteMode, setIsDeleteMode] = useState(false);
-    const [isHabitsCollapsed, setIsHabitsCollapsed] = useState(false);
+    const [isDeleteMode, setIsDeleteMode] = React.useState(false);
 
     const scrollContainerRef = React.useRef(null);
     const scrollPosRef = React.useRef(0);

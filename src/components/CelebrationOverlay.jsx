@@ -1,23 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import ReactConfetti from 'react-confetti';
+import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 
 const CelebrationOverlay = ({ data }) => {
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     // Parse data safely
     const type = data ? data.type : null;
     const originId = data ? data.originId : null;
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setDimensions({ width: window.innerWidth, height: window.innerHeight });
-            const handleResize = () => {
-                setDimensions({ width: window.innerWidth, height: window.innerHeight });
-            };
-            window.addEventListener('resize', handleResize);
-            return () => window.removeEventListener('resize', handleResize);
-        }
-    }, []);
 
     useEffect(() => {
         if (!type) return;

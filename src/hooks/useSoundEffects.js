@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-// import useSound from 'use-sound'; // Importing, but since we might not have assets, we'll use a safer approach for the "placeholder" phase to guarantee no crashes.
 
 // Helper to play a synthesized beep (No external assets needed)
 const playSynth = (frequency = 440, type = 'sine', duration = 0.1) => {

@@ -1,16 +1,14 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-// import GoalCard from './components/GoalCard'; // Keeping for partial compatibility if needed
-// import HabitCard from './components/HabitCard';
 import BigGoalCard from './components/BigGoalCard';
 import DailyRing from './components/DailyRing';
-import WeekView from './components/WeekView'; // Assuming this component exists or is in the repo
+import WeekView from './components/WeekView';
 import JournalView from './views/JournalView';
 import FocusView from './views/FocusView';
 import StatsSection from './components/StatsSection';
 import CelebrationOverlay from './components/CelebrationOverlay';
 import useSoundEffects from './hooks/useSoundEffects';
+import useDebounce from './hooks/useDebounce';
 import haptic from './utils/haptic';
-
 
 import StatsSettings from './components/StatsSettings';
 import FloatingActionButton from './components/FloatingActionButton';
@@ -27,26 +25,12 @@ import { format, isSameDay, parseISO, startOfToday, subDays, differenceInCalenda
 // --- Constants ---
 const DEFAULT_HABITS = [];
 
-// --- Persistence (Debounced) ---
-function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [value, delay]);
-    return debouncedValue;
-}
 
 function App() {
     // --- State ---
     const [theme, setTheme] = useTheme();
 
-    // 1. Session Persistence (Tab & View)
-    // 1. Session Persistence (Tab)
+    // Session Persistence (Tab)
     const [activeTab, setActiveTabState] = useState(() => localStorage.getItem('productivity_active_tab') || 'focus');
     const setActiveTab = (tab) => {
         setActiveTabState(tab);
@@ -172,42 +156,7 @@ function App() {
         return saved ? JSON.parse(saved) : [];
     });
 
-    // --- Mock Data Helper ---
-    const generateMockHistory = () => {
-        const mockHistory = [];
-        const today = new Date();
-
-        // Generate past 7 days
-        for (let i = 1; i <= 7; i++) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
-
-            // Use DEFAULT_HABITS for consistency with current state
-            const goals = DEFAULT_HABITS.map((h, idx) => {
-                const isCompleted = Math.random() > 0.4; // 60% chance of completion
-                return {
-                    id: h.id,
-                    title: h.title,
-                    isCompleted: isCompleted,
-                    icon: h.icon
-                };
-            });
-
-            const completedGoals = goals.filter(g => g.isCompleted).length;
-            const progress = Math.round((completedGoals / goals.length) * 100);
-
-            mockHistory.push({
-                date: format(date, 'MMM d'),
-                dateKey: format(date, 'yyyy-MM-dd'),
-                dayName: format(date, 'EEEE'),
-                goals: goals,
-                progress: progress
-            });
-        }
-        return mockHistory;
-    };
-
-    // 3. History (Keep for stats)
+    // History (Keep for stats)
     const [history, setHistory] = useState(() => {
         const saved = localStorage.getItem('productivity_history');
         if (saved) {
