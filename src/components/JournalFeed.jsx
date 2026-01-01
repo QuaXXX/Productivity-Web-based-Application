@@ -107,7 +107,7 @@ function JournalEntryCard({ entry, onCreateGoal, onUpdateEntry, dismissedSuggest
     };
 
     const [isEditing, setIsEditing] = useState(false);
-    const [editedContent, setEditedContent] = useState(entry.content);
+    const [editedContent, setEditedContent] = useState(entry.content || '');
     const [isExpanded, setIsExpanded] = useState(false);
 
     const handleSave = () => {
@@ -116,6 +116,8 @@ function JournalEntryCard({ entry, onCreateGoal, onUpdateEntry, dismissedSuggest
         }
         setIsEditing(false);
     };
+
+    const displayContent = entry.content || '';
 
     return (
         <div className={`p-4 rounded-3xl transition-all card-hover ${isDream
@@ -161,14 +163,14 @@ function JournalEntryCard({ entry, onCreateGoal, onUpdateEntry, dismissedSuggest
             ) : (
                 <div className="group/content relative cursor-pointer">
                     {/* Only truncate if content is long (> 200 chars) */}
-                    {entry.content.length > 200 ? (
+                    {displayContent.length > 200 ? (
                         <>
                             <div
                                 onClick={() => setIsExpanded(!isExpanded)}
                                 className={`transition-all duration-300 relative ${!isExpanded ? 'max-h-[80px] overflow-hidden' : ''}`}
                             >
                                 <p className={`text-sm leading-relaxed whitespace-pre-wrap font-medium text-gray-800 dark:text-gray-300`}>
-                                    {entry.content}
+                                    {displayContent}
                                 </p>
 
                                 {/* Gradient Fade Overlay when collapsed */}
@@ -179,7 +181,7 @@ function JournalEntryCard({ entry, onCreateGoal, onUpdateEntry, dismissedSuggest
                         </>
                     ) : (
                         <p className={`text-sm leading-relaxed whitespace-pre-wrap font-medium text-gray-800 dark:text-gray-300`}>
-                            {entry.content}
+                            {displayContent}
                         </p>
                     )}
 

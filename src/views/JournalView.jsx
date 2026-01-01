@@ -10,7 +10,9 @@ export default function JournalView({ entries = [], onAddEntry = () => console.w
     const filteredEntries = useMemo(() => {
         return entries.filter(entry => {
             // 1. Text Search
-            const matchesSearch = entry.content.toLowerCase().includes(searchTerm.toLowerCase());
+            // 1. Text Search
+            const content = entry.content || '';
+            const matchesSearch = content.toLowerCase().includes(searchTerm.toLowerCase());
 
             // 2. Tab Filter
             const matchesTab = activeTab === 'all'
