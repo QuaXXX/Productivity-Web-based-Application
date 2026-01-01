@@ -15,6 +15,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
     const textRef = useRef(text);
     const lastTranscriptRef = useRef('');
     const shouldStopRef = useRef(false);
+    const processedResultsRef = useRef(0); // Track which results we've already processed
 
     // Keep textRef in sync
     React.useEffect(() => {
@@ -39,57 +40,39 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         recognition.onend = () => {
             console.log('Voice recognition ended');
             setInterimText('');
-
-            if (shouldStopRef.current) {
-                setIsRecording(false);
-                // Auto-polish on stop
-                const currentText = textRef.current;
-                if (currentText && currentText.trim()) {
-                    const polished = polishText(currentText);
-                    setText(polished);
-                }
-            } else if (recognitionRef.current) {
-                // Auto-restart if not manually stopped
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error("Restart error:", e);
-                    setIsRecording(false);
-                }
+            setIsRecording(false);
+            // Auto-polish text on stop
+            const currentText = textRef.current;
+            if (currentText && currentText.trim()) {
+                const polished = polishText(currentText);
+                setText(polished);
             }
         };
 
         recognition.onresult = (event) => {
-            let finalTranscript = '';
-            let interimTranscript = '';
+            // Only look at the LAST result to avoid repetition
+            const lastResultIndex = event.results.length - 1;
+            const result = event.results[lastResultIndex];
+            const transcript = result[0].transcript.trim();
 
-            for (let i = 0; i < event.results.length; i++) {
-                const result = event.results[i];
-                const transcript = result[0].transcript;
+            if (result.isFinal) {
+                // Only process if this is a NEW final result we haven't seen
+                if (lastResultIndex >= processedResultsRef.current && transcript) {
+                    processedResultsRef.current = lastResultIndex + 1;
 
-                if (result.isFinal) {
-                    finalTranscript += transcript;
-                } else {
-                    interimTranscript += transcript;
-                }
-            }
-
-            if (finalTranscript) {
-                const cleanTranscript = finalTranscript.trim();
-                const lastClean = lastTranscriptRef.current.toLowerCase();
-                const newClean = cleanTranscript.toLowerCase();
-
-                // Only add if not a duplicate
-                if (cleanTranscript && newClean !== lastClean && !lastClean.endsWith(newClean)) {
-                    lastTranscriptRef.current = cleanTranscript;
+                    // Append this final transcript to text
                     setText(prev => {
-                        if (prev.toLowerCase().endsWith(newClean)) return prev;
-                        return prev + (prev ? ' ' : '') + cleanTranscript;
+                        const prevLower = prev.toLowerCase().trim();
+                        const newLower = transcript.toLowerCase();
+                        // Don't append if it's already at the end
+                        if (prevLower.endsWith(newLower)) return prev;
+                        return prev + (prev ? ' ' : '') + transcript;
                     });
                 }
                 setInterimText('');
-            } else if (interimTranscript) {
-                setInterimText(interimTranscript);
+            } else {
+                // Show interim (live) transcription without appending
+                setInterimText(transcript);
             }
         };
 
@@ -120,6 +103,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         recognitionRef.current = recognition;
         shouldStopRef.current = false;
         lastTranscriptRef.current = '';
+        processedResultsRef.current = 0; // Reset for new session
 
         try {
             recognition.start();
