@@ -19,8 +19,6 @@ export default function JournalComposer({ onAddEntry, playSound }) {
     const baseTextRef = useRef('');
     // Track all text finalized during THIS recording session (across restarts)
     const sessionTextRef = useRef('');
-    // Track processed result index for CURRENT recognition instance
-    const processedIndexRef = useRef(0);
 
     // Keep textRef in sync
     React.useEffect(() => {
@@ -42,7 +40,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         }
 
         const recognition = new SpeechRecognition();
-        recognition.continuous = true;
+        recognition.continuous = false; // Disable Native Continuity for Mobile
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
         recognition.lang = 'en-US';
@@ -77,41 +75,38 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         };
 
         recognition.onresult = (event) => {
-            // Only process results we haven't seen yet (from processedIndexRef onwards)
-            let newFinalText = '';
+            let newFinalTextChunk = '';
             let currentInterim = '';
 
-            for (let i = processedIndexRef.current; i < event.results.length; i++) {
+            // Use event.resultIndex (native) instead of custom ref
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
                 const result = event.results[i];
                 const transcript = result[0].transcript.trim();
 
                 if (result.isFinal) {
-                    // This is a NEW final result - add it to our buffer
-                    newFinalText += (newFinalText ? ' ' : '') + transcript;
-                    // Mark this index as processed
-                    processedIndexRef.current = i + 1;
+                    // Filter by Confidence > 0 to avoid Android ghost duplicates
+                    if (result[0].confidence > 0) {
+                        newFinalTextChunk += (newFinalTextChunk ? ' ' : '') + transcript;
+                    }
                 } else {
-                    // Show only the current interim (not final yet)
                     currentInterim = transcript;
                 }
             }
 
-            // Update interim display (this is temporary, shown in gray)
             setInterimText(currentInterim);
 
-            // If we got NEW final text, append it to session text and update display
-            if (newFinalText) {
-                // Append to session text (accumulates during this recording session)
+            if (newFinalTextChunk) {
+                // Append to session text
                 sessionTextRef.current = sessionTextRef.current
-                    ? sessionTextRef.current + ' ' + newFinalText
-                    : newFinalText;
+                    ? sessionTextRef.current + ' ' + newFinalTextChunk
+                    : newFinalTextChunk;
 
-                // Update the displayed text = base text + session text
-                const fullText = baseTextRef.current
-                    ? baseTextRef.current + ' ' + sessionTextRef.current
-                    : sessionTextRef.current;
-
-                setText(fullText);
+                // Functional state update to avoid race conditions
+                setText(() => {
+                    const base = baseTextRef.current || '';
+                    const session = sessionTextRef.current || '';
+                    return base + (base && session ? ' ' : '') + session;
+                });
             }
         };
 
@@ -148,7 +143,6 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         // Save current text as base, reset session text
         baseTextRef.current = textRef.current;
         sessionTextRef.current = '';
-        processedIndexRef.current = 0;
         isActiveRef.current = true;
         startRecognitionInstance();
     }, [startRecognitionInstance]);
