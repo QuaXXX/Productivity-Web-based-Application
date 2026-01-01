@@ -9,24 +9,24 @@ export default function JournalComposer({ onAddEntry, playSound }) {
     const [type, setType] = useState('daily');
     const [text, setText] = useState('');
     const [interimText, setInterimText] = useState('');
-    const [mood, setMood] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
 
     const recognitionRef = useRef(null);
     const textRef = useRef(text);
-    const lastTranscriptRef = useRef(''); // Track last transcript to prevent duplicates
+    const lastTranscriptRef = useRef('');
+    const shouldStopRef = useRef(false);
 
     // Keep textRef in sync
     React.useEffect(() => {
         textRef.current = text;
     }, [text]);
 
-    // Create a fresh recognition instance
+    // Create a fresh recognition instance with continuous mode
     const createRecognition = useCallback(() => {
         if (!SpeechRecognition) return null;
 
         const recognition = new SpeechRecognition();
-        recognition.continuous = false; // SINGLE SHOT - no continuous mode
+        recognition.continuous = true; // Stay on until manually stopped
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
         recognition.lang = 'en-US';
@@ -39,13 +39,23 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         recognition.onend = () => {
             console.log('Voice recognition ended');
             setInterimText('');
-            setIsRecording(false);
 
-            // Auto-polish on stop
-            const currentText = textRef.current;
-            if (currentText && currentText.trim()) {
-                const polished = polishText(currentText);
-                setText(polished);
+            if (shouldStopRef.current) {
+                setIsRecording(false);
+                // Auto-polish on stop
+                const currentText = textRef.current;
+                if (currentText && currentText.trim()) {
+                    const polished = polishText(currentText);
+                    setText(polished);
+                }
+            } else if (recognitionRef.current) {
+                // Auto-restart if not manually stopped
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error("Restart error:", e);
+                    setIsRecording(false);
+                }
             }
         };
 
@@ -73,7 +83,6 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 if (cleanTranscript && newClean !== lastClean && !lastClean.endsWith(newClean)) {
                     lastTranscriptRef.current = cleanTranscript;
                     setText(prev => {
-                        // Extra check: don't append if already ends with this
                         if (prev.toLowerCase().endsWith(newClean)) return prev;
                         return prev + (prev ? ' ' : '') + cleanTranscript;
                     });
@@ -86,14 +95,15 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
         recognition.onerror = (event) => {
             console.error('Voice recognition error', event.error);
-            setIsRecording(false);
+            if (event.error !== 'no-speech') {
+                setIsRecording(false);
+            }
         };
 
         return recognition;
     }, []);
 
     const startRecording = useCallback(() => {
-        // Kill any existing instance
         if (recognitionRef.current) {
             try {
                 recognitionRef.current.onend = null;
@@ -101,7 +111,6 @@ export default function JournalComposer({ onAddEntry, playSound }) {
             } catch (e) { /* ignore */ }
         }
 
-        // Create fresh instance
         const recognition = createRecognition();
         if (!recognition) {
             alert("Voice recognition not supported in this browser.");
@@ -109,7 +118,8 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         }
 
         recognitionRef.current = recognition;
-        lastTranscriptRef.current = ''; // Reset last transcript
+        shouldStopRef.current = false;
+        lastTranscriptRef.current = '';
 
         try {
             recognition.start();
@@ -119,6 +129,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
     }, [createRecognition]);
 
     const stopRecording = useCallback(() => {
+        shouldStopRef.current = true;
         if (recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
@@ -142,13 +153,15 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
     const handleSend = () => {
         // Stop recording if active
-        if (isRecording && recognitionRef.current) {
-            recognitionRef.current.stop();
+        if (isRecording) {
+            shouldStopRef.current = true;
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
             setIsRecording(false);
             setInterimText('');
         }
 
-        // Polish one last time
         const finalText = polishText(text);
 
         if (!finalText.trim()) return;
@@ -160,7 +173,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
             timestamp: new Date().toISOString(),
             type,
             content: finalText,
-            mood,
+            mood: null,
             audioUrl: null,
             tags: [],
             enableAI: true
@@ -168,16 +181,13 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
         if (onAddEntry) onAddEntry(newEntry);
         setText('');
-        setMood(null);
-        lastTranscriptRef.current = ''; // Reset
+        lastTranscriptRef.current = '';
     };
-
-    const moods = ['😊', '😔', '😤', '😴', '🤔', '🎉'];
 
     return (
         <div className="bg-[var(--color-surface)] rounded-2xl p-4 shadow-[var(--shadow-card)] border border-[var(--color-border-light)]">
-            {/* Type Toggle */}
-            <div className="flex gap-2 mb-3">
+            {/* Type Toggle - Centered */}
+            <div className="flex justify-center gap-2 mb-3">
                 <button
                     onClick={() => setType('daily')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${type === 'daily'
@@ -209,22 +219,8 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 />
             </div>
 
-            {/* Mood Selector */}
-            <div className="flex gap-2 mt-3 mb-3">
-                {moods.map(m => (
-                    <button
-                        key={m}
-                        onClick={() => setMood(mood === m ? null : m)}
-                        className={`text-xl p-1 rounded-lg transition-transform hover:scale-110 ${mood === m ? 'bg-[var(--color-primary-light)] scale-110' : ''
-                            }`}
-                    >
-                        {m}
-                    </button>
-                ))}
-            </div>
-
             {/* Action Buttons */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mt-3">
                 <div className="flex items-center gap-2">
                     {/* Record Button */}
                     <button
@@ -238,7 +234,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                         {isRecording ? <Square size={18} fill="white" /> : <Mic size={18} />}
                     </button>
 
-                    {/* Recording Indicator - Inline */}
+                    {/* Recording Indicator */}
                     {isRecording && (
                         <div className="flex items-center gap-1.5 text-red-500">
                             <div className="flex gap-0.5">
