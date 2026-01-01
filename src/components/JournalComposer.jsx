@@ -216,7 +216,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 <button
                     onClick={() => setType('daily')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${type === 'daily'
-                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                         : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)]'
                         }`}
                 >

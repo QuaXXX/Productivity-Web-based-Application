@@ -1,12 +1,12 @@
 import React from 'react';
-import { Target, Book, BarChart2, Calendar, History } from 'lucide-react';
+import { Target, Book, BarChart2, Heart } from 'lucide-react';
 import haptic from '../utils/haptic';
 
 const BottomNav = ({ activeTab, onTabChange }) => {
     const tabs = [
         { id: 'focus', label: 'Focus', icon: Target },
-        { id: 'weekly', label: 'History', icon: History },
         { id: 'journal', label: 'Journal', icon: Book },
+        { id: 'faith', label: 'Faith', icon: Heart },
         { id: 'profile', label: 'Stats', icon: BarChart2 },
     ];
 

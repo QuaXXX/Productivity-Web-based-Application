@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import BigGoalCard from './components/BigGoalCard';
 import DailyRing from './components/DailyRing';
-import WeekView from './components/WeekView';
 import JournalView from './views/JournalView';
 import FocusView from './views/FocusView';
+import FaithView from './views/FaithView';
 import StatsSection from './components/StatsSection';
 import CelebrationOverlay from './components/CelebrationOverlay';
 import useSoundEffects from './hooks/useSoundEffects';
@@ -56,7 +56,7 @@ function App() {
         // Scroll to top immediately BEFORE state change to prevent "snap" after transition
         window.scrollTo({ top: 0, behavior: 'instant' });
 
-        const TAB_ORDER = ['focus', 'weekly', 'journal', 'profile'];
+        const TAB_ORDER = ['focus', 'journal', 'faith', 'profile'];
         const oldIndex = TAB_ORDER.indexOf(activeTab);
         const newIndex = TAB_ORDER.indexOf(newTab);
         setSlideDirection(newIndex > oldIndex ? 1 : -1);
@@ -101,7 +101,7 @@ function App() {
     const goalsListRef = useRef(null);
 
     // --- Swipe Navigation State ---
-    const TAB_ORDER = ['focus', 'weekly', 'journal', 'profile'];
+    const TAB_ORDER = ['focus', 'journal', 'faith', 'profile'];
     const [touchStart, setTouchStart] = useState(null);
     const [touchEnd, setTouchEnd] = useState(null);
     const minSwipeDistance = 50;
@@ -879,7 +879,7 @@ function App() {
     const getHeaderDateLabel = () => {
         if (activeTab === 'profile') return "Your Stats";
         if (activeTab === 'journal') return "Your History";
-        if (activeTab === 'weekly') return "Habit History";
+        if (activeTab === 'faith') return "Daily Verse";
 
         // Focus
         if (viewingDate === 'Today') return format(new Date(), 'MMMM d');
@@ -887,7 +887,7 @@ function App() {
     };
 
     const getHeaderSubtitle = () => {
-        if (activeTab === 'weekly') return null; // No subtitle for History view
+        if (activeTab === 'faith') return null; // No subtitle for Faith view
         if (activeTab !== 'focus') return null;
 
         if (viewingDate === 'Today') return format(new Date(), 'EEEE').toUpperCase();
@@ -1025,15 +1025,8 @@ function App() {
                                     onToggleVisibility={toggleGoalVisibility}
                                     autoHideCompleted={autoHideCompleted}
                                 />
-                            ) : activeTab === 'weekly' ? (
-                                <WeekView
-                                    history={weekViewData}
-                                    viewingDate={viewingDate}
-                                    onNavigateToToday={() => { handleTabChange('focus'); setViewingDate('Today'); }}
-                                    onAddFutureTask={() => { }}
-                                    selectedDayIndex={weekSelectedDayIndex}
-                                    setSelectedDayIndex={setWeekSelectedDayIndex}
-                                />
+                            ) : activeTab === 'faith' ? (
+                                <FaithView />
                             ) : activeTab === 'journal' ? (
                                 <JournalView
                                     entries={journalEntries}

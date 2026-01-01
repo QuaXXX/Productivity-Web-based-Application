@@ -50,7 +50,7 @@ export default function JournalView({ entries = [], onAddEntry = () => console.w
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all border ${activeTab === tab
-                                ? (tab === 'dream' ? 'bg-[var(--color-dream)] text-white border-[var(--color-dream)]' : (tab === 'daily' ? 'bg-[var(--color-warning)] text-white border-[var(--color-warning)]' : 'bg-[var(--color-text-primary)] text-[var(--color-surface)] border-[var(--color-text-primary)]'))
+                                ? (tab === 'dream' ? 'bg-[var(--color-dream)] text-white border-[var(--color-dream)]' : (tab === 'daily' ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-text-primary)] text-[var(--color-surface)] border-[var(--color-text-primary)]'))
                                 : 'bg-transparent text-[var(--color-text-tertiary)] border-[var(--color-border-default)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)]'
                                 }`}
                         >

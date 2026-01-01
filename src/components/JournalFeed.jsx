@@ -126,7 +126,7 @@ function JournalEntryCard({ entry, onCreateGoal, onUpdateEntry, dismissedSuggest
             }`}>
             <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                    <div className={`p-1.5 rounded-full ${isDream ? 'bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200' : 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300'}`}>
+                    <div className={`p-1.5 rounded-full ${isDream ? 'bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300'}`}>
                         {isDream ? <Moon size={14} /> : <Sun size={14} />}
                     </div>
                     <span className={`text-[10px] font-bold uppercase tracking-wider ${isDream ? 'text-indigo-400 dark:text-indigo-300' : 'text-gray-400 dark:text-gray-500'}`}>
