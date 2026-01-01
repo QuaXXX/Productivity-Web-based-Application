@@ -13,21 +13,30 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
     const recognitionRef = useRef(null);
     const textRef = useRef(text);
-    const lastTranscriptRef = useRef('');
-    const shouldStopRef = useRef(false);
-    const processedResultsRef = useRef(0); // Track which results we've already processed
+    const isActiveRef = useRef(false); // TRUE = user wants recording on, FALSE = user stopped it
+    const finalizedTextRef = useRef(''); // Stores ALL finalized text from this recording session
 
     // Keep textRef in sync
     React.useEffect(() => {
         textRef.current = text;
     }, [text]);
 
-    // Create a fresh recognition instance with continuous mode
-    const createRecognition = useCallback(() => {
-        if (!SpeechRecognition) return null;
+    // Create and start a fresh recognition instance
+    const startRecognitionInstance = useCallback(() => {
+        if (!SpeechRecognition || !isActiveRef.current) return;
+
+        // Clean up any existing instance
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.onend = null;
+                recognitionRef.current.onerror = null;
+                recognitionRef.current.onresult = null;
+                recognitionRef.current.abort();
+            } catch (e) { /* ignore */ }
+        }
 
         const recognition = new SpeechRecognition();
-        recognition.continuous = true; // Stay on until manually stopped
+        recognition.continuous = true;
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
         recognition.lang = 'en-US';
@@ -38,82 +47,99 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         };
 
         recognition.onend = () => {
-            console.log('Voice recognition ended');
+            console.log('Voice recognition ended, isActive:', isActiveRef.current);
             setInterimText('');
-            setIsRecording(false);
-            // Auto-polish text on stop
-            const currentText = textRef.current;
-            if (currentText && currentText.trim()) {
-                const polished = polishText(currentText);
-                setText(polished);
+
+            if (isActiveRef.current) {
+                // User did NOT stop - auto-restart after brief delay
+                console.log('Auto-restarting recognition...');
+                setTimeout(() => {
+                    if (isActiveRef.current) {
+                        startRecognitionInstance();
+                    }
+                }, 100);
+            } else {
+                // User explicitly stopped
+                setIsRecording(false);
+                // Polish the final text
+                const currentText = textRef.current;
+                if (currentText && currentText.trim()) {
+                    const polished = polishText(currentText);
+                    setText(polished);
+                }
             }
         };
 
         recognition.onresult = (event) => {
-            // Only look at the LAST result to avoid repetition
-            const lastResultIndex = event.results.length - 1;
-            const result = event.results[lastResultIndex];
-            const transcript = result[0].transcript.trim();
+            // Process ALL results to find finals, but only add NEW finals
+            let newFinalText = '';
+            let currentInterim = '';
 
-            if (result.isFinal) {
-                // Only process if this is a NEW final result we haven't seen
-                if (lastResultIndex >= processedResultsRef.current && transcript) {
-                    processedResultsRef.current = lastResultIndex + 1;
+            for (let i = 0; i < event.results.length; i++) {
+                const result = event.results[i];
+                const transcript = result[0].transcript.trim();
 
-                    // Append this final transcript to text
-                    setText(prev => {
-                        const prevLower = prev.toLowerCase().trim();
-                        const newLower = transcript.toLowerCase();
-                        // Don't append if it's already at the end
-                        if (prevLower.endsWith(newLower)) return prev;
-                        return prev + (prev ? ' ' : '') + transcript;
-                    });
+                if (result.isFinal) {
+                    newFinalText += (newFinalText ? ' ' : '') + transcript;
+                } else {
+                    currentInterim = transcript; // Only show the latest interim
                 }
-                setInterimText('');
-            } else {
-                // Show interim (live) transcription without appending
-                setInterimText(transcript);
+            }
+
+            // Update interim display
+            setInterimText(currentInterim);
+
+            // If we have final text, check if it's new and append
+            if (newFinalText) {
+                const previousFinalized = finalizedTextRef.current.toLowerCase();
+                const newLower = newFinalText.toLowerCase();
+
+                // Only update if this final text is different from what we've already finalized
+                if (newLower !== previousFinalized && !previousFinalized.endsWith(newLower)) {
+                    finalizedTextRef.current = newFinalText;
+                    setText(newFinalText);
+                }
             }
         };
 
         recognition.onerror = (event) => {
-            console.error('Voice recognition error', event.error);
-            if (event.error !== 'no-speech') {
+            console.error('Voice recognition error:', event.error);
+            // Don't stop on 'no-speech' or 'aborted' - let onend handle restart
+            if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                isActiveRef.current = false;
                 setIsRecording(false);
             }
         };
 
-        return recognition;
-    }, []);
-
-    const startRecording = useCallback(() => {
-        if (recognitionRef.current) {
-            try {
-                recognitionRef.current.onend = null;
-                recognitionRef.current.stop();
-            } catch (e) { /* ignore */ }
-        }
-
-        const recognition = createRecognition();
-        if (!recognition) {
-            alert("Voice recognition not supported in this browser.");
-            return;
-        }
-
         recognitionRef.current = recognition;
-        shouldStopRef.current = false;
-        lastTranscriptRef.current = '';
-        processedResultsRef.current = 0; // Reset for new session
 
         try {
             recognition.start();
         } catch (e) {
-            console.error("Start error:", e);
+            console.error('Start error:', e);
+            // If start fails, try again after a delay
+            setTimeout(() => {
+                if (isActiveRef.current) {
+                    startRecognitionInstance();
+                }
+            }, 200);
         }
-    }, [createRecognition]);
+    }, []);
 
+    // Start recording - called when user clicks mic button
+    const startRecording = useCallback(() => {
+        if (!SpeechRecognition) {
+            alert("Voice recognition not supported in this browser.");
+            return;
+        }
+        isActiveRef.current = true;
+        finalizedTextRef.current = ''; // Reset for new session
+        startRecognitionInstance();
+    }, [startRecognitionInstance]);
+
+    // Stop recording - called when user clicks mic button or sends
     const stopRecording = useCallback(() => {
-        shouldStopRef.current = true;
+        isActiveRef.current = false;
         if (recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
@@ -121,6 +147,8 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                 console.error("Stop error:", e);
             }
         }
+        setIsRecording(false);
+        setInterimText('');
         haptic.success();
     }, []);
 
@@ -137,10 +165,12 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
     const handleSend = () => {
         // Stop recording if active
-        if (isRecording) {
-            shouldStopRef.current = true;
+        if (isRecording || isActiveRef.current) {
+            isActiveRef.current = false;
             if (recognitionRef.current) {
-                recognitionRef.current.stop();
+                try {
+                    recognitionRef.current.stop();
+                } catch (e) { /* ignore */ }
             }
             setIsRecording(false);
             setInterimText('');
@@ -165,7 +195,7 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
         if (onAddEntry) onAddEntry(newEntry);
         setText('');
-        lastTranscriptRef.current = '';
+        finalizedTextRef.current = '';
     };
 
     return (
