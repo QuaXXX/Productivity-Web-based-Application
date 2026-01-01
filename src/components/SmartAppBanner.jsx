@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, Share, Plus } from 'lucide-react';
+import { X, Download, Share, Plus, ExternalLink } from 'lucide-react';
 
 const SmartAppBanner = () => {
     const [showBanner, setShowBanner] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
+    const [isIOSSafari, setIsIOSSafari] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [dismissed, setDismissed] = useState(false);
 
@@ -23,6 +24,11 @@ const SmartAppBanner = () => {
         // Detect iOS
         const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         setIsIOS(isIOSDevice);
+
+        // Detect if Safari on iOS (only Safari supports PWA install on iOS)
+        const isSafari = /^((?!chrome|android|crios|fxios|edgios|opios).)*safari/i.test(navigator.userAgent);
+        const isIOSSafariBrowser = isIOSDevice && isSafari;
+        setIsIOSSafari(isIOSSafariBrowser);
 
         if (isIOSDevice) {
             // Show iOS banner after short delay
@@ -59,6 +65,12 @@ const SmartAppBanner = () => {
         localStorage.setItem('appBannerDismissed', 'true');
     };
 
+    const openInSafari = () => {
+        // Copy URL to clipboard and show instructions
+        navigator.clipboard?.writeText(window.location.href);
+        alert('URL copied! Open Safari and paste it there to install the app.');
+    };
+
     if (!showBanner || dismissed) return null;
 
     return (
@@ -79,11 +91,28 @@ const SmartAppBanner = () => {
                         </h3>
 
                         {isIOS ? (
-                            <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed">
-                                Tap <Share size={12} className="inline mx-0.5 -mt-0.5" /> then
-                                <span className="font-semibold"> "Add to Home Screen"</span>
-                                <Plus size={10} className="inline mx-0.5 -mt-0.5" />
-                            </p>
+                            isIOSSafari ? (
+                                // iOS Safari - can install
+                                <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed">
+                                    Tap <Share size={12} className="inline mx-0.5 -mt-0.5" /> then
+                                    <span className="font-semibold"> "Add to Home Screen"</span>
+                                    <Plus size={10} className="inline mx-0.5 -mt-0.5" />
+                                </p>
+                            ) : (
+                                // iOS Chrome/other - can't install, need Safari
+                                <>
+                                    <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed">
+                                        Open in <span className="font-bold">Safari</span> to install as an app
+                                    </p>
+                                    <button
+                                        onClick={openInSafari}
+                                        className="mt-2 flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-lg active:scale-95 transition-transform"
+                                    >
+                                        <ExternalLink size={14} />
+                                        Copy Link
+                                    </button>
+                                </>
+                            )
                         ) : (
                             <p className="text-xs text-[var(--color-text-secondary)] mt-1">
                                 Get the full app experience
