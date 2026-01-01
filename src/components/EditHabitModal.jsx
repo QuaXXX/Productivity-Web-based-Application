@@ -1,0 +1,119 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { X, Sparkles } from 'lucide-react';
+import haptic from '../utils/haptic';
+
+export default function EditHabitModal({ isOpen, onClose, onSave, habit }) {
+    const [title, setTitle] = useState(habit?.title || '');
+    const [icon, setIcon] = useState(habit?.icon || '📝');
+
+    // Reset form when habit changes
+    React.useEffect(() => {
+        if (habit) {
+            setTitle(habit.title || '');
+            setIcon(habit.icon || '📝');
+        }
+    }, [habit]);
+
+    if (!isOpen || !habit) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!title.trim()) return;
+
+        haptic.success();
+        onSave(habit.id, title.trim(), icon);
+        onClose();
+    };
+
+    const suggestedIcons = [
+        // Energy & Mind
+        '⚡', '🧠', '🎯', '✨', '🔥',
+        // Fitness & Muscle
+        '💪', '🦵', '🏋️', '🏃', '🧗', '🤸', '🦾', '👟',
+        // Food & Nutrition
+        '🍏', '🥗', '🥑', '🍎', '🥦', '🍳', '🥛', '💊',
+        // Sleep & Rest
+        '💤', '😴', '🛌', '🌙',
+        // Hydration & Ice
+        '💧', '🧊', '❄️', '🥶', '🫧',
+        // Looks & Beauty
+        '💅', '👁️', '💇', '🧴', '🪞', '💎', '🧖',
+        // Learning & Hobbies
+        '📖', '🧘', '🎸', '💻', '🎨', '📝',
+        // Life & Home
+        '🧹', '💵', '🪴', '🚫', '📅', '📞', '🛒', '🧺', '🐾', '🦷'
+    ];
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            />
+            <motion.form
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onSubmit={handleSubmit}
+                className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl p-5 w-full max-w-sm relative z-10 border border-gray-100 dark:border-white/10"
+            >
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                        <Sparkles size={18} className="text-blue-500" /> Edit Habit
+                    </h3>
+                    <button type="button" onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full text-gray-400 dark:text-gray-500 transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="space-y-4">
+                    {/* Current habit preview */}
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                        <span className="text-2xl">{icon}</span>
+                        <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{title || habit.title}</p>
+                            <p className="text-xs text-gray-500">Streak: {habit.streak || 0} 🔥</p>
+                        </div>
+                    </div>
+
+                    <input
+                        autoFocus
+                        type="text"
+                        placeholder="Habit name"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all font-medium placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                    />
+
+                    <div>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Choose an icon</p>
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            {suggestedIcons.map(emoji => (
+                                <button
+                                    key={emoji}
+                                    type="button"
+                                    onClick={() => { haptic.light(); setIcon(emoji); }}
+                                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all flex-shrink-0 active:scale-90 ${icon === emoji ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-500 dark:border-blue-500' : 'bg-gray-50 dark:bg-neutral-800 border border-transparent hover:bg-gray-100 dark:hover:bg-neutral-700'}`}
+                                >
+                                    {emoji}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={!title.trim()}
+                        className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 active:scale-95"
+                    >
+                        Save Changes
+                    </button>
+                </div>
+            </motion.form>
+        </div>
+    );
+}

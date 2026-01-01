@@ -1,7 +1,7 @@
 
 import React, { useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil } from 'lucide-react';
 import HabitCircle from '../components/HabitCircle';
 import BigGoalCard from '../components/BigGoalCard';
 import EmptyState from '../components/EmptyState';
@@ -17,7 +17,8 @@ const FocusView = ({
     onDeleteBigGoal,
     onOpenHabitModal,
     onOpenGoalModal,
-    onDeleteHabit
+    onDeleteHabit,
+    onEditHabit
 }) => {
     const [isDeleteMode, setIsDeleteMode] = React.useState(false);
 
@@ -55,10 +56,10 @@ const FocusView = ({
                 {/* Top/Left: Habits */}
                 <div className="flex-shrink-0 pt-2 lg:overflow-y-auto lg:h-full lg:border-r lg:border-gray-100 dark:lg:border-white/5 lg:pr-4">
                     {/* Header Removed - Cleaner Look */}
-                    <div className="overflow-hidden">
+                    <div className="overflow-visible">
                         {/* Action Bar: Add & Delete Controls (Add Removed, Edit kept minimal) */}
                         {!isReadOnly && (
-                            <div className="flex items-center justify-between px-4 mb-3">
+                            <div className="flex items-center justify-between px-4 mb-3 relative z-0">
                                 <h2 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider">Daily Habits</h2>
                                 <button
                                     onClick={() => setIsDeleteMode(!isDeleteMode)}
@@ -73,30 +74,46 @@ const FocusView = ({
 
                         {/* Mobile: Horizontal Scroll | Desktop: Grid of Circles */}
                         <div
-                            className="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto lg:overflow-visible pb-2 px-4 scrollbar-hide items-center lg:items-start lg:content-start"
+                            className="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto lg:overflow-visible pt-2 pb-2 px-4 scrollbar-hide items-center lg:items-start lg:content-start relative z-10"
                         >
-                            <AnimatePresence mode="popLayout">
+                            <AnimatePresence mode="sync">
                                 {visibleHabits.map(habit => (
                                     <motion.div
                                         layout
                                         key={habit.id}
                                         initial={{ scale: 0.8, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
-                                        exit={{ scale: 0.8, opacity: 0 }}
-                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                        className={`relative min-w-[72px] ${isDeleteMode ? 'animate-shake' : ''}`}
+                                        exit={{ scale: 0, opacity: 0, y: 30, rotate: -15 }}
+                                        transition={{
+                                            type: "spring",
+                                            stiffness: 200,
+                                            damping: 20,
+                                            layout: { type: "spring", stiffness: 300, damping: 30 },
+                                            exit: { duration: 0.35, ease: "easeOut" }
+                                        }}
+                                        className={`relative min-w-[72px] ${isDeleteMode ? 'animate-shake z-20' : ''}`}
                                     >
                                         <HabitCircle
                                             {...habit}
                                             onToggle={isReadOnly ? () => { } : (isDeleteMode ? () => onDeleteHabit(habit.id) : handleHabitToggle)}
                                         />
                                         {isDeleteMode && (
-                                            <button
-                                                onClick={() => onDeleteHabit(habit.id)}
-                                                className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
-                                            >
-                                                <Trash2 size={12} />
-                                            </button>
+                                            <>
+                                                {/* Edit button - top left */}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onEditHabit && onEditHabit(habit); }}
+                                                    className="absolute -top-1 -left-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors z-10"
+                                                >
+                                                    <Pencil size={10} />
+                                                </button>
+                                                {/* Delete button - top right */}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onDeleteHabit(habit.id); }}
+                                                    className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors z-10"
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </>
                                         )}
                                     </motion.div>
                                 ))}

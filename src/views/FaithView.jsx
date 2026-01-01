@@ -101,8 +101,28 @@ const FaithView = () => {
         }
     }, []);
 
+    // Get today's date key for persistence
+    const getTodayKey = () => new Date().toISOString().split('T')[0];
+
     // Get a random verse (API with fallback)
-    const getRandomVerse = useCallback(async () => {
+    const getRandomVerse = useCallback(async (forceNew = false) => {
+        // Check localStorage for saved verse (unless forcing new)
+        if (!forceNew) {
+            try {
+                const saved = localStorage.getItem('dailyVerse');
+                if (saved) {
+                    const { verse, date } = JSON.parse(saved);
+                    // If same day, use saved verse
+                    if (date === getTodayKey()) {
+                        setIsOnline(true);
+                        return verse;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to read saved verse:', e);
+            }
+        }
+
         setIsLoading(true);
 
         // Pick a random reference
@@ -114,6 +134,11 @@ const FaithView = () => {
         if (apiVerse) {
             setIsOnline(true);
             setIsLoading(false);
+            // Save to localStorage
+            localStorage.setItem('dailyVerse', JSON.stringify({
+                verse: apiVerse,
+                date: getTodayKey()
+            }));
             return apiVerse;
         }
 
@@ -121,20 +146,25 @@ const FaithView = () => {
         setIsOnline(false);
         setIsLoading(false);
         const randomIndex = Math.floor(Math.random() * FALLBACK_VERSES.length);
-        return FALLBACK_VERSES[randomIndex];
+        const fallbackVerse = FALLBACK_VERSES[randomIndex];
+        localStorage.setItem('dailyVerse', JSON.stringify({
+            verse: fallbackVerse,
+            date: getTodayKey()
+        }));
+        return fallbackVerse;
     }, [fetchVerseFromAPI]);
 
-    // Initialize with a random verse
+    // Initialize with saved or random verse
     useEffect(() => {
-        getRandomVerse().then(setCurrentVerse);
+        getRandomVerse(false).then(setCurrentVerse);
     }, []);
 
-    // Refresh verse with animation
+    // Refresh verse with animation (force new)
     const handleRefresh = async () => {
         haptic.medium();
         setIsLoading(true);
 
-        const verse = await getRandomVerse();
+        const verse = await getRandomVerse(true); // Force new verse
         setCurrentVerse(verse);
     };
 

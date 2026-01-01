@@ -16,6 +16,7 @@ import FloatingActionButton from './components/FloatingActionButton';
 import BottomNav from './components/BottomNav';
 import CreateGoalModal from './components/CreateGoalModal';
 import CreateHabitModal from './components/CreateHabitModal';
+import EditHabitModal from './components/EditHabitModal';
 import HabitRow from './components/HabitRow';
 import HabitCircle from './components/HabitCircle';
 import useTheme from './hooks/useTheme';
@@ -43,6 +44,9 @@ function App() {
     const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
     const [isStatsSettingsOpen, setIsStatsSettingsOpen] = useState(false);
+
+    // Edit Habit Modal State
+    const [editingHabit, setEditingHabit] = useState(null);
 
     // Slide Transition State
     // Slide Transition State
@@ -1047,7 +1051,7 @@ function App() {
                                     onToggleHabit={handleToggleHabit}
                                     onOpenHabitModal={() => setIsHabitModalOpen(true)}
                                     onOpenGoalModal={() => setIsGoalModalOpen(true)}
-                                    onEditHabit={handleEditHabit}
+                                    onEditHabit={(habit) => setEditingHabit(habit)}
                                     onDeleteHabit={handleDeleteHabit}
                                     onAddBigGoalStep={addBigGoalStep}
                                     onToggleBigGoalStep={toggleBigGoalStep}
@@ -1113,6 +1117,15 @@ function App() {
                         onClose={() => { setIsGoalModalOpen(false); setGoalModalInitialData(null); }}
                         onCreate={handleAddGoal}
                         initialData={goalModalInitialData}
+                    />
+                )}
+                {editingHabit && (
+                    <EditHabitModal
+                        key="edit-habit-modal"
+                        isOpen={!!editingHabit}
+                        onClose={() => setEditingHabit(null)}
+                        onSave={handleEditHabit}
+                        habit={editingHabit}
                     />
                 )}
             </AnimatePresence>
