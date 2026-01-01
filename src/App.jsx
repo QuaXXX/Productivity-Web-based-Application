@@ -6,6 +6,7 @@ import FocusView from './views/FocusView';
 import FaithView from './views/FaithView';
 import StatsSection from './components/StatsSection';
 import CelebrationOverlay from './components/CelebrationOverlay';
+import SmartAppBanner from './components/SmartAppBanner';
 import useSoundEffects from './hooks/useSoundEffects';
 import useDebounce from './hooks/useDebounce';
 import haptic from './utils/haptic';
@@ -911,6 +912,9 @@ function App() {
 
             {/* Global Celebration Overlay */}
             <CelebrationOverlay data={celebrationData} />
+
+            {/* Smart App Banner - Install Prompt */}
+            <SmartAppBanner />
 
             {/* Modals moved to bottom of component to avoid duplicate rendering */}
 
