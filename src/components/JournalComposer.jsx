@@ -13,8 +13,14 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
     const recognitionRef = useRef(null);
     const textRef = useRef(text);
-    const isActiveRef = useRef(false); // TRUE = user wants recording on, FALSE = user stopped it
-    const finalizedTextRef = useRef(''); // Stores ALL finalized text from this recording session
+    const isActiveRef = useRef(false); // TRUE = user wants recording on
+
+    // Track text that existed BEFORE this recording session started
+    const baseTextRef = useRef('');
+    // Track all text finalized during THIS recording session (across restarts)
+    const sessionTextRef = useRef('');
+    // Track processed result index for CURRENT recognition instance
+    const processedIndexRef = useRef(0);
 
     // Keep textRef in sync
     React.useEffect(() => {
@@ -71,34 +77,41 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         };
 
         recognition.onresult = (event) => {
-            // Process ALL results to find finals, but only add NEW finals
+            // Only process results we haven't seen yet (from processedIndexRef onwards)
             let newFinalText = '';
             let currentInterim = '';
 
-            for (let i = 0; i < event.results.length; i++) {
+            for (let i = processedIndexRef.current; i < event.results.length; i++) {
                 const result = event.results[i];
                 const transcript = result[0].transcript.trim();
 
                 if (result.isFinal) {
+                    // This is a NEW final result - add it to our buffer
                     newFinalText += (newFinalText ? ' ' : '') + transcript;
+                    // Mark this index as processed
+                    processedIndexRef.current = i + 1;
                 } else {
-                    currentInterim = transcript; // Only show the latest interim
+                    // Show only the current interim (not final yet)
+                    currentInterim = transcript;
                 }
             }
 
-            // Update interim display
+            // Update interim display (this is temporary, shown in gray)
             setInterimText(currentInterim);
 
-            // If we have final text, check if it's new and append
+            // If we got NEW final text, append it to session text and update display
             if (newFinalText) {
-                const previousFinalized = finalizedTextRef.current.toLowerCase();
-                const newLower = newFinalText.toLowerCase();
+                // Append to session text (accumulates during this recording session)
+                sessionTextRef.current = sessionTextRef.current
+                    ? sessionTextRef.current + ' ' + newFinalText
+                    : newFinalText;
 
-                // Only update if this final text is different from what we've already finalized
-                if (newLower !== previousFinalized && !previousFinalized.endsWith(newLower)) {
-                    finalizedTextRef.current = newFinalText;
-                    setText(newFinalText);
-                }
+                // Update the displayed text = base text + session text
+                const fullText = baseTextRef.current
+                    ? baseTextRef.current + ' ' + sessionTextRef.current
+                    : sessionTextRef.current;
+
+                setText(fullText);
             }
         };
 
@@ -132,8 +145,11 @@ export default function JournalComposer({ onAddEntry, playSound }) {
             alert("Voice recognition not supported in this browser.");
             return;
         }
+        // Save current text as base, reset session text
+        baseTextRef.current = textRef.current;
+        sessionTextRef.current = '';
+        processedIndexRef.current = 0;
         isActiveRef.current = true;
-        finalizedTextRef.current = ''; // Reset for new session
         startRecognitionInstance();
     }, [startRecognitionInstance]);
 
@@ -195,7 +211,8 @@ export default function JournalComposer({ onAddEntry, playSound }) {
 
         if (onAddEntry) onAddEntry(newEntry);
         setText('');
-        finalizedTextRef.current = '';
+        baseTextRef.current = '';
+        sessionTextRef.current = '';
     };
 
     return (
