@@ -9,6 +9,7 @@ import CelebrationOverlay from './components/CelebrationOverlay';
 import useSoundEffects from './hooks/useSoundEffects';
 import useDebounce from './hooks/useDebounce';
 import haptic from './utils/haptic';
+import { STORAGE_KEYS } from './constants/storageKeys';
 
 import StatsSettings from './components/StatsSettings';
 import FloatingActionButton from './components/FloatingActionButton';
@@ -22,6 +23,7 @@ import DatePicker from './components/DatePicker';
 import { Plus, BarChart2, Repeat, Settings, X, Mountain, Flag, RefreshCw, Calendar, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isSameDay, parseISO, startOfToday, subDays, differenceInCalendarDays, addDays } from 'date-fns';
+
 // --- Constants ---
 const DEFAULT_HABITS = [];
 
@@ -31,10 +33,10 @@ function App() {
     const [theme, setTheme] = useTheme();
 
     // Session Persistence (Tab)
-    const [activeTab, setActiveTabState] = useState(() => localStorage.getItem('productivity_active_tab') || 'focus');
+    const [activeTab, setActiveTabState] = useState(() => localStorage.getItem(STORAGE_KEYS.ACTIVE_TAB) || 'focus');
     const setActiveTab = (tab) => {
         setActiveTabState(tab);
-        localStorage.setItem('productivity_active_tab', tab);
+        localStorage.setItem(STORAGE_KEYS.ACTIVE_TAB, tab);
     };
 
     const [viewingDate, setViewingDate] = useState('Today');
@@ -63,14 +65,14 @@ function App() {
 
     // 2. Smart Defaults (Auto-Hide) - Default to TRUE
     const [autoHideCompleted, setAutoHideCompletedState] = useState(() => {
-        const saved = localStorage.getItem('productivity_auto_hide');
+        const saved = localStorage.getItem(STORAGE_KEYS.AUTO_HIDE);
         // Default to TRUE if not found (first time user), otherwise parse
         return saved === null ? true : JSON.parse(saved);
     });
     const setAutoHideCompleted = (val) => {
         const newValue = typeof val === 'function' ? val(autoHideCompleted) : val;
         setAutoHideCompletedState(newValue);
-        localStorage.setItem('productivity_auto_hide', JSON.stringify(newValue));
+        localStorage.setItem(STORAGE_KEYS.AUTO_HIDE, JSON.stringify(newValue));
     };
 
     // --- Reward System State ---
@@ -82,14 +84,14 @@ function App() {
 
     // --- Suggestion Persistence ---
     const [dismissedSuggestions, setDismissedSuggestions] = useState(() => {
-        const saved = localStorage.getItem('productivity_dismissed_suggestions');
+        const saved = localStorage.getItem(STORAGE_KEYS.DISMISSED_SUGGESTIONS);
         return saved ? JSON.parse(saved) : [];
     });
 
     const handleDismissSuggestion = (suggestionId) => {
         setDismissedSuggestions(prev => {
             const next = [...prev, suggestionId];
-            localStorage.setItem('productivity_dismissed_suggestions', JSON.stringify(next));
+            localStorage.setItem(STORAGE_KEYS.DISMISSED_SUGGESTIONS, JSON.stringify(next));
             return next;
         });
     };
@@ -146,19 +148,19 @@ function App() {
     // --- Persistence & Initialization ---
     // 1. Daily Habits (Persistent, with resets)
     const [habits, setHabits] = useState(() => {
-        const saved = localStorage.getItem('productivity_habits');
+        const saved = localStorage.getItem(STORAGE_KEYS.HABITS);
         return saved ? JSON.parse(saved) : DEFAULT_HABITS;
     });
 
     // 2. Big Goals (Persistent, Project-based)
     const [bigGoals, setBigGoals] = useState(() => {
-        const saved = localStorage.getItem('productivity_big_goals');
+        const saved = localStorage.getItem(STORAGE_KEYS.BIG_GOALS);
         return saved ? JSON.parse(saved) : [];
     });
 
     // History (Keep for stats)
     const [history, setHistory] = useState(() => {
-        const saved = localStorage.getItem('productivity_history');
+        const saved = localStorage.getItem(STORAGE_KEYS.HISTORY);
         if (saved) {
             return JSON.parse(saved);
         }
@@ -210,30 +212,30 @@ function App() {
 
     // 5. Stats Settings
     const [visibleStats, setVisibleStats] = useState(() => {
-        const saved = localStorage.getItem('productivity_stats_settings');
+        const saved = localStorage.getItem(STORAGE_KEYS.STATS_SETTINGS);
         return saved ? JSON.parse(saved) : { streak: true, weekly: true, consistency: true };
     });
 
     // 6. Chart Style
     const [chartStyle, setChartStyle] = useState(() => {
-        return localStorage.getItem('productivity_chart_style') || 'bar';
+        return localStorage.getItem(STORAGE_KEYS.CHART_STYLE) || 'bar';
     });
 
     // 7. Future Specific Goals
     const [futureSpecifics, setFutureSpecifics] = useState(() => {
-        const saved = localStorage.getItem('productivity_future_specifics');
+        const saved = localStorage.getItem(STORAGE_KEYS.FUTURE_SPECIFICS);
         return saved ? JSON.parse(saved) : {};
     });
 
     // 9. Hidden Goals State
     const [hiddenGoalIds, setHiddenGoalIds] = useState(() => {
-        const saved = localStorage.getItem('productivity_hidden_goals');
+        const saved = localStorage.getItem(STORAGE_KEYS.HIDDEN_GOALS);
         return saved ? JSON.parse(saved) : [];
     });
 
     // 10. Journal Entries (New Feature)
     const [journalEntries, setJournalEntries] = useState(() => {
-        const saved = localStorage.getItem('productivity_journal_entries');
+        const saved = localStorage.getItem(STORAGE_KEYS.JOURNAL_ENTRIES);
         return saved ? JSON.parse(saved) : [];
     });
 
@@ -262,31 +264,31 @@ function App() {
 
 
     useEffect(() => {
-        localStorage.setItem('productivity_habits', JSON.stringify(debouncedHabits));
+        localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(debouncedHabits));
     }, [debouncedHabits]);
 
     useEffect(() => {
-        localStorage.setItem('productivity_big_goals', JSON.stringify(debouncedBigGoals));
+        localStorage.setItem(STORAGE_KEYS.BIG_GOALS, JSON.stringify(debouncedBigGoals));
     }, [debouncedBigGoals]);
 
     useEffect(() => {
-        localStorage.setItem('productivity_stats_settings', JSON.stringify(debouncedStatsSettings));
+        localStorage.setItem(STORAGE_KEYS.STATS_SETTINGS, JSON.stringify(debouncedStatsSettings));
     }, [debouncedStatsSettings]);
 
     useEffect(() => {
-        localStorage.setItem('productivity_future_specifics', JSON.stringify(debouncedFutureSpecifics));
+        localStorage.setItem(STORAGE_KEYS.FUTURE_SPECIFICS, JSON.stringify(debouncedFutureSpecifics));
     }, [debouncedFutureSpecifics]);
 
     useEffect(() => {
-        localStorage.setItem('productivity_chart_style', chartStyle);
+        localStorage.setItem(STORAGE_KEYS.CHART_STYLE, chartStyle);
     }, [chartStyle]); // Less critical to debounce, simple string
 
     useEffect(() => {
-        localStorage.setItem('productivity_hidden_goals', JSON.stringify(debouncedHiddenGoals));
+        localStorage.setItem(STORAGE_KEYS.HIDDEN_GOALS, JSON.stringify(debouncedHiddenGoals));
     }, [debouncedHiddenGoals]);
 
     useEffect(() => {
-        localStorage.setItem('productivity_journal_entries', JSON.stringify(debouncedJournalEntries));
+        localStorage.setItem(STORAGE_KEYS.JOURNAL_ENTRIES, JSON.stringify(debouncedJournalEntries));
     }, [debouncedJournalEntries]);
 
 
@@ -321,7 +323,7 @@ function App() {
 
         const newHistory = [newHistoryEntry, ...history];
         setHistory(newHistory);
-        localStorage.setItem('productivity_history', JSON.stringify(newHistory));
+        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(newHistory));
     };
 
     const recalculateStreaks = () => {
@@ -693,16 +695,16 @@ function App() {
     const handleFreshStart = () => {
         if (window.confirm('This will delete ALL your data including habits, goals, and journal entries. Are you absolutely sure?')) {
             // Clear all localStorage
-            localStorage.removeItem('productivity_habits');
-            localStorage.removeItem('productivity_big_goals');
-            localStorage.removeItem('productivity_history');
-            localStorage.removeItem('productivity_journal_entries');
-            localStorage.removeItem('productivity_stats_settings');
-            localStorage.removeItem('productivity_hidden_goals');
-            localStorage.removeItem('productivity_future_specifics');
-            localStorage.removeItem('productivity_dismissed_suggestions');
-            localStorage.removeItem('productivity_chart_style');
-            localStorage.removeItem('productivity_auto_hide');
+            localStorage.removeItem(STORAGE_KEYS.HABITS);
+            localStorage.removeItem(STORAGE_KEYS.BIG_GOALS);
+            localStorage.removeItem(STORAGE_KEYS.HISTORY);
+            localStorage.removeItem(STORAGE_KEYS.JOURNAL_ENTRIES);
+            localStorage.removeItem(STORAGE_KEYS.STATS_SETTINGS);
+            localStorage.removeItem(STORAGE_KEYS.HIDDEN_GOALS);
+            localStorage.removeItem(STORAGE_KEYS.FUTURE_SPECIFICS);
+            localStorage.removeItem(STORAGE_KEYS.DISMISSED_SUGGESTIONS);
+            localStorage.removeItem(STORAGE_KEYS.CHART_STYLE);
+            localStorage.removeItem(STORAGE_KEYS.AUTO_HIDE);
 
             // Reload the page to reset state
             window.location.reload();
