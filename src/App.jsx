@@ -907,7 +907,7 @@ function App() {
     };
 
     return (
-        <div className={`min-h-screen flex flex-col items-center pt-6 px-4 pb-0 transition-colors duration-300 relative bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] ${isReadOnly ? 'opacity-95' : ''}`}>
+        <div className={`min-h-screen flex flex-col items-center pt-2 px-4 pb-0 transition-colors duration-300 relative bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] ${isReadOnly ? 'opacity-95' : ''}`}>
 
             {/* Global Celebration Overlay */}
             <CelebrationOverlay data={celebrationData} />
@@ -915,7 +915,7 @@ function App() {
             {/* Modals moved to bottom of component to avoid duplicate rendering */}
 
 
-            <main className={`max-w-4xl w-full flex flex-col h-[calc(100vh-24px)] relative transition-all duration-300 ${isHeaderCollapsed ? 'space-y-0' : 'space-y-4'}`}>
+            <main className={`max-w-4xl w-full flex flex-col h-[calc(100dvh-16px)] relative transition-all duration-300 ${isHeaderCollapsed ? 'space-y-0' : 'space-y-4'}`}>
 
                 {/* Header & Toggle (Mobile Aesthetic) - Collapsible on Scroll */}
                 <header className={`flex flex-col px-4 pt-2 flex-shrink-0 relative z-20 transition-all duration-300 ${isHeaderCollapsed ? 'space-y-1 py-1' : 'space-y-4'}`}>
