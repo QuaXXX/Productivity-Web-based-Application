@@ -175,8 +175,8 @@ export default function CreateGoalModal({ isOpen, onClose, onCreate, initialData
                                     <button
                                         key={t.id}
                                         type="button"
-                                        onClick={() => setTheme(t.id)}
-                                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${theme === t.id ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'}`}
+                                        onClick={() => { haptic.light(); setTheme(t.id); }}
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 ${theme === t.id ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'}`}
                                     >
                                         <div className={`w-full h-full rounded-full ${t.color}`} />
                                     </button>

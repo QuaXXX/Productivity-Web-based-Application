@@ -58,15 +58,28 @@ export default function JournalComposer({ onAddEntry, playSound }) {
                     }
                 };
 
-                recognition.onresult = (event) => {
-                    const result = event.results[event.results.length - 1];
-                    const transcript = result[0].transcript;
+                let lastProcessedIndex = -1;
 
-                    if (result.isFinal) {
-                        setText(prev => prev + (prev ? ' ' : '') + transcript.trim());
-                        setInterimText('');
-                    } else {
-                        setInterimText(transcript);
+                recognition.onresult = (event) => {
+                    // Only process new results (prevents duplicates)
+                    for (let i = lastProcessedIndex + 1; i < event.results.length; i++) {
+                        const result = event.results[i];
+                        const transcript = result[0].transcript;
+
+                        if (result.isFinal) {
+                            lastProcessedIndex = i;
+                            const cleanTranscript = transcript.trim();
+                            if (cleanTranscript) {
+                                setText(prev => {
+                                    // Extra deduplication: prevent exact duplicate append
+                                    if (prev.endsWith(cleanTranscript)) return prev;
+                                    return prev + (prev ? ' ' : '') + cleanTranscript;
+                                });
+                            }
+                            setInterimText('');
+                        } else {
+                            setInterimText(transcript);
+                        }
                     }
                 };
 

@@ -66,8 +66,8 @@ export default function CreateHabitModal({ isOpen, onClose, onCreate }) {
                             <button
                                 key={emoji}
                                 type="button"
-                                onClick={() => setIcon(emoji)}
-                                className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all flex-shrink-0 ${icon === emoji ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-500 dark:border-blue-500' : 'bg-gray-50 dark:bg-neutral-800 border border-transparent hover:bg-gray-100 dark:hover:bg-neutral-700'}`}
+                                onClick={() => { haptic.light(); setIcon(emoji); }}
+                                className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all flex-shrink-0 active:scale-90 ${icon === emoji ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-500 dark:border-blue-500' : 'bg-gray-50 dark:bg-neutral-800 border border-transparent hover:bg-gray-100 dark:hover:bg-neutral-700'}`}
                             >
                                 {emoji}
                             </button>

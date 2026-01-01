@@ -9,6 +9,7 @@ import FocusView from './views/FocusView';
 import StatsSection from './components/StatsSection';
 import CelebrationOverlay from './components/CelebrationOverlay';
 import useSoundEffects from './hooks/useSoundEffects';
+import haptic from './utils/haptic';
 
 
 import StatsSettings from './components/StatsSettings';
@@ -1014,8 +1015,8 @@ function App() {
                         <div className="flex items-center gap-2">
                             {/* Theme Toggle */}
                             <button
-                                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                                className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                                onClick={() => { haptic.light(); setTheme(theme === 'dark' ? 'light' : 'dark'); }}
+                                className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors active:scale-95"
                             >
                                 {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                             </button>
@@ -1025,8 +1026,8 @@ function App() {
                             {/* Profile Settings (Only on Profile) */}
                             {activeTab === 'profile' && (
                                 <button
-                                    onClick={() => setIsStatsSettingsOpen(true)}
-                                    className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                                    onClick={() => { haptic.light(); setIsStatsSettingsOpen(true); }}
+                                    className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors active:scale-95"
                                 >
                                     <Settings size={20} />
                                 </button>
