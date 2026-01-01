@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Sun, Moon, Mic, Send, Square } from 'lucide-react';
 import { polishText } from '../utils/textPolisher';
 import haptic from '../utils/haptic';
@@ -13,159 +13,142 @@ export default function JournalComposer({ onAddEntry, playSound }) {
     const [isRecording, setIsRecording] = useState(false);
 
     const recognitionRef = useRef(null);
-    const shouldStopRef = useRef(false);
     const textRef = useRef(text);
+    const lastTranscriptRef = useRef(''); // Track last transcript to prevent duplicates
 
-    useEffect(() => {
+    // Keep textRef in sync
+    React.useEffect(() => {
         textRef.current = text;
     }, [text]);
 
-    useEffect(() => {
-        if (typeof window !== 'undefined' && SpeechRecognition) {
-            try {
-                const recognition = new SpeechRecognition();
-                recognition.continuous = true;
-                recognition.interimResults = true;
-                recognition.maxAlternatives = 1;
-                recognition.lang = 'en-US';
+    // Create a fresh recognition instance
+    const createRecognition = useCallback(() => {
+        if (!SpeechRecognition) return null;
 
-                recognition.onstart = () => {
-                    console.log('Voice recognition started');
-                    setIsRecording(true);
-                };
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false; // SINGLE SHOT - no continuous mode
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+        recognition.lang = 'en-US';
 
-                recognition.onend = () => {
-                    console.log('Voice recognition ended');
-                    setInterimText('');
-                    if (shouldStopRef.current) {
-                        setIsRecording(false);
+        recognition.onstart = () => {
+            console.log('Voice recognition started');
+            setIsRecording(true);
+        };
 
-                        // Auto-polish on stop
-                        const currentText = textRef.current;
-                        if (currentText && currentText.trim()) {
-                            const polished = polishText(currentText);
-                            setText(polished);
-                        }
+        recognition.onend = () => {
+            console.log('Voice recognition ended');
+            setInterimText('');
+            setIsRecording(false);
 
-                    } else {
-                        console.log('Restarting voice recognition...');
-                        try {
-                            recognition.start();
-                        } catch (e) {
-                            console.error("Restart error:", e);
-                            setIsRecording(false);
-                        }
-                    }
-                };
-
-                // Track recent transcripts to prevent duplicates across restarts
-                const recentTranscripts = [];
-                const DEDUPE_WINDOW_MS = 3000; // 3 second window
-
-                const isDuplicate = (newText) => {
-                    const now = Date.now();
-                    // Clean old entries
-                    while (recentTranscripts.length > 0 && now - recentTranscripts[0].time > DEDUPE_WINDOW_MS) {
-                        recentTranscripts.shift();
-                    }
-
-                    const normalizedNew = newText.toLowerCase().trim();
-
-                    // Check for exact match or if new text is contained in recent or vice versa
-                    for (const entry of recentTranscripts) {
-                        const normalizedOld = entry.text.toLowerCase();
-                        if (normalizedNew === normalizedOld) return true;
-                        if (normalizedOld.includes(normalizedNew)) return true;
-                        if (normalizedNew.includes(normalizedOld) && normalizedNew.length < normalizedOld.length * 1.5) return true;
-                    }
-
-                    return false;
-                };
-
-                recognition.onresult = (event) => {
-                    // Get the latest result
-                    const result = event.results[event.results.length - 1];
-                    const transcript = result[0].transcript;
-
-                    if (result.isFinal) {
-                        const cleanTranscript = transcript.trim();
-                        if (cleanTranscript && !isDuplicate(cleanTranscript)) {
-                            // Add to history
-                            recentTranscripts.push({ text: cleanTranscript, time: Date.now() });
-
-                            setText(prev => {
-                                // Extra safety: check if text already ends with this
-                                if (prev.toLowerCase().endsWith(cleanTranscript.toLowerCase())) return prev;
-                                return prev + (prev ? ' ' : '') + cleanTranscript;
-                            });
-                        }
-                        setInterimText('');
-                    } else {
-                        setInterimText(transcript);
-                    }
-                };
-
-                recognition.onerror = (event) => {
-                    console.error('Voice recognition error', event.error);
-                    setIsRecording(false);
-                };
-
-                recognitionRef.current = recognition;
-            } catch (e) {
-                console.error("SpeechRecognition init failed:", e);
-            }
-        }
-
-        // Cleanup function to kill zombie listeners
-        return () => {
-            if (recognitionRef.current) {
-                console.log("Cleaning up voice recognition...");
-                recognitionRef.current.onend = null; // Prevent restart loop
-                recognitionRef.current.stop();
+            // Auto-polish on stop
+            const currentText = textRef.current;
+            if (currentText && currentText.trim()) {
+                const polished = polishText(currentText);
+                setText(polished);
             }
         };
+
+        recognition.onresult = (event) => {
+            let finalTranscript = '';
+            let interimTranscript = '';
+
+            for (let i = 0; i < event.results.length; i++) {
+                const result = event.results[i];
+                const transcript = result[0].transcript;
+
+                if (result.isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            if (finalTranscript) {
+                const cleanTranscript = finalTranscript.trim();
+                const lastClean = lastTranscriptRef.current.toLowerCase();
+                const newClean = cleanTranscript.toLowerCase();
+
+                // Only add if not a duplicate
+                if (cleanTranscript && newClean !== lastClean && !lastClean.endsWith(newClean)) {
+                    lastTranscriptRef.current = cleanTranscript;
+                    setText(prev => {
+                        // Extra check: don't append if already ends with this
+                        if (prev.toLowerCase().endsWith(newClean)) return prev;
+                        return prev + (prev ? ' ' : '') + cleanTranscript;
+                    });
+                }
+                setInterimText('');
+            } else if (interimTranscript) {
+                setInterimText(interimTranscript);
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Voice recognition error', event.error);
+            setIsRecording(false);
+        };
+
+        return recognition;
     }, []);
 
-    const toggleRecording = async () => {
-        if (playSound) playSound('click');
-        haptic.light();
+    const startRecording = useCallback(() => {
+        // Kill any existing instance
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.onend = null;
+                recognitionRef.current.stop();
+            } catch (e) { /* ignore */ }
+        }
 
-        if (!recognitionRef.current) {
-            if (SpeechRecognition) {
-                alert("Voice recognition not initialized. Please refresh.");
-            } else {
-                alert("Voice recognition not supported in this browser.");
-            }
+        // Create fresh instance
+        const recognition = createRecognition();
+        if (!recognition) {
+            alert("Voice recognition not supported in this browser.");
             return;
         }
 
+        recognitionRef.current = recognition;
+        lastTranscriptRef.current = ''; // Reset last transcript
+
         try {
-            if (isRecording) {
-                // STOP
-                shouldStopRef.current = true;
-                recognitionRef.current.stop();
-                haptic.success();
-            } else {
-                // START
-                shouldStopRef.current = false;
-                recognitionRef.current.start();
-            }
+            recognition.start();
         } catch (e) {
-            console.error("Toggle error:", e);
-            setIsRecording(false);
+            console.error("Start error:", e);
+        }
+    }, [createRecognition]);
+
+    const stopRecording = useCallback(() => {
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch (e) {
+                console.error("Stop error:", e);
+            }
+        }
+        haptic.success();
+    }, []);
+
+    const toggleRecording = () => {
+        if (playSound) playSound('click');
+        haptic.light();
+
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
         }
     };
 
     const handleSend = () => {
         // Stop recording if active
         if (isRecording && recognitionRef.current) {
-            shouldStopRef.current = true;
             recognitionRef.current.stop();
             setIsRecording(false);
             setInterimText('');
         }
 
-        // Just run polish one last time to be sure
+        // Polish one last time
         const finalText = polishText(text);
 
         if (!finalText.trim()) return;
@@ -186,103 +169,103 @@ export default function JournalComposer({ onAddEntry, playSound }) {
         if (onAddEntry) onAddEntry(newEntry);
         setText('');
         setMood(null);
+        lastTranscriptRef.current = ''; // Reset
     };
 
-    const handleTypeChange = (newType) => {
-        if (playSound) playSound('click');
-        setType(newType);
-    }
+    const moods = ['😊', '😔', '😤', '😴', '🤔', '🎉'];
 
     return (
-        <div className="bg-[var(--color-surface)] rounded-3xl p-4 shadow-[var(--shadow-card)] border border-[var(--color-border-light)] transition-colors duration-500">
-            {/* Toggle Header */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="bg-[var(--color-bg-secondary)] p-1 rounded-full flex mx-auto">
-                    <button
-                        onClick={() => handleTypeChange('daily')}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${type === 'daily'
-                            ? 'bg-[var(--color-surface)] text-[var(--color-warning)] shadow-sm'
-                            : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
-                            }`}
-                    >
-                        <Sun size={16} />
-                        <span>Daily Log</span>
-                    </button>
-                    <button
-                        onClick={() => handleTypeChange('dream')}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${type === 'dream'
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'text-gray-400 hover:text-gray-600'
-                            }`}
-                    >
-                        <Moon size={16} />
-                        <span>Dream Journal</span>
-                    </button>
-                </div>
+        <div className="bg-[var(--color-surface)] rounded-2xl p-4 shadow-[var(--shadow-card)] border border-[var(--color-border-light)]">
+            {/* Type Toggle */}
+            <div className="flex gap-2 mb-3">
+                <button
+                    onClick={() => setType('daily')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${type === 'daily'
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                        : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)]'
+                        }`}
+                >
+                    <Sun size={14} /> Daily Log
+                </button>
+                <button
+                    onClick={() => setType('dream')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${type === 'dream'
+                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                        : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)]'
+                        }`}
+                >
+                    <Moon size={14} /> Dream
+                </button>
             </div>
 
             {/* Input Area */}
-            <div className={`relative rounded-2xl p-3 min-h-[120px] transition-colors ${type === 'dream' ? 'bg-indigo-50/50 dark:bg-indigo-900/20' : 'bg-gray-50 dark:bg-neutral-800'}`}>
+            <div className="relative">
                 <textarea
                     value={text + (interimText ? (text ? ' ' : '') + interimText : '')}
-                    onChange={(e) => {
-                        if (!isRecording) {
-                            setText(e.target.value);
-                        }
-                    }}
-                    placeholder={type === 'dream' ? "What did you dream about?..." : "What's on your mind today?..."}
-                    className="w-full h-full bg-transparent resize-none outline-none text-gray-700 dark:text-gray-200 text-base placeholder:text-gray-400 dark:placeholder:text-gray-500 min-h-[100px]"
-                    readOnly={isRecording}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder={type === 'dream' ? "Describe your dream..." : "What's on your mind?"}
+                    rows={3}
+                    className="w-full bg-[var(--color-bg-secondary)] rounded-xl p-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none outline-none focus:ring-2 focus:ring-[var(--color-primary-light)] transition-all border border-transparent focus:border-[var(--color-primary-light)]"
                 />
             </div>
 
-            {/* Actions Row */}
-            <div className="flex items-center justify-between mt-3 px-1">
-                {/* Left side: Status indicators */}
+            {/* Mood Selector */}
+            <div className="flex gap-2 mt-3 mb-3">
+                {moods.map(m => (
+                    <button
+                        key={m}
+                        onClick={() => setMood(mood === m ? null : m)}
+                        className={`text-xl p-1 rounded-lg transition-transform hover:scale-110 ${mood === m ? 'bg-[var(--color-primary-light)] scale-110' : ''
+                            }`}
+                    >
+                        {m}
+                    </button>
+                ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
+                    {/* Record Button */}
+                    <button
+                        onClick={toggleRecording}
+                        disabled={!SpeechRecognition}
+                        className={`p-2.5 rounded-full transition-all active:scale-95 ${isRecording
+                            ? 'bg-red-500 text-white animate-pulse'
+                            : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]'
+                            }`}
+                    >
+                        {isRecording ? <Square size={18} fill="white" /> : <Mic size={18} />}
+                    </button>
+
+                    {/* Recording Indicator - Inline */}
                     {isRecording && (
-                        <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-full px-3 py-1.5">
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                            <div className="flex items-center gap-0.5">
-                                {[...Array(5)].map((_, i) => (
+                        <div className="flex items-center gap-1.5 text-red-500">
+                            <div className="flex gap-0.5">
+                                {[...Array(3)].map((_, i) => (
                                     <div
                                         key={i}
                                         className="w-1 bg-red-500 rounded-full animate-pulse"
                                         style={{
-                                            height: `${8 + (i % 3) * 4}px`,
-                                            animationDelay: `${i * 0.1}s`,
+                                            height: `${8 + Math.random() * 8}px`,
+                                            animationDelay: `${i * 0.15}s`
                                         }}
                                     />
                                 ))}
                             </div>
-                            <span className="text-xs font-semibold text-red-600 dark:text-red-400 ml-1">Recording</span>
+                            <span className="text-xs font-medium">Listening...</span>
                         </div>
                     )}
                 </div>
 
-                {/* Right side: Buttons */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={toggleRecording}
-                        className={`p-3 rounded-full transition-all ${isRecording
-                            ? 'bg-red-500 dark:bg-red-600 text-white'
-                            : 'bg-gray-50 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-neutral-700'
-                            }`}
-                    >
-                        {isRecording ? <Square size={20} fill="currentColor" /> : <Mic size={20} />}
-                    </button>
-
-                    <button
-                        onClick={handleSend}
-                        disabled={!text.trim()}
-                        className={`p-3 rounded-full transition-all flex items-center space-x-2 ${text.trim()
-                            ? (type === 'dream' ? 'bg-indigo-600 dark:bg-indigo-700 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-600' : 'bg-orange-500 dark:bg-orange-600 text-white shadow-md hover:bg-orange-600 dark:hover:bg-orange-500')
-                            : 'bg-gray-100 dark:bg-neutral-800 text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            }`}
-                    >
-                        <Send size={20} />
-                    </button>
-                </div>
+                {/* Send Button */}
+                <button
+                    onClick={handleSend}
+                    disabled={!text.trim() && !interimText.trim()}
+                    className="p-2.5 bg-[var(--color-primary)] text-white rounded-full hover:bg-[var(--color-primary-dark)] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                >
+                    <Send size={18} />
+                </button>
             </div>
         </div>
     );
